@@ -1,0 +1,12 @@
+# Ignore all .git related files and directories
+.git
+.gitignore
+
+# Ignore node_modules directory
+node_modules
+
+# build output directory
+dist
+
+# Ignore sensitive environment files
+.env-local
