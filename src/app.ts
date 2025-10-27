@@ -22,7 +22,7 @@ function main(): void {
   const server = new Server({
     port: envs.PORT,
     routes: AppRoutes.router,
-    Logger: logger,
+    Logger: logger.child("Server"),
   });
 
   server.start();
