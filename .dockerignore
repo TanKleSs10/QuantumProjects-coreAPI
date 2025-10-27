@@ -9,4 +9,4 @@ node_modules
 dist
 
 # Ignore sensitive environment files
-.env-local
+.env

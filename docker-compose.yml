@@ -1,0 +1,70 @@
+services:
+  # API principal
+  qp_api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: quantum-projects-api
+    env_file:
+      - .env
+    ports:
+      - "${PORT}:4000" # mapea el puerto del host al contenedor
+    volumes:
+      - ./:/app # monta el código fuente local dentro del contenedor
+      - /app/node_modules # evita conflictos de dependencias
+    depends_on:
+      - qp_mongo
+    restart: unless-stopped
+    networks:
+      - qp_network
+
+  # MongoDB
+  qp_mongo:
+    image: mongo:7
+    container_name: quantum-projects-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB_NAME}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+    networks:
+      - qp_network
+
+  # Loki
+  loki:
+    image: grafana/loki:2.9.2
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - qp_network
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: grafana
+    ports:
+      - "3000:3000" # acceso desde el host
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GF_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_PASS}
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - qp_network
+
+# 📦  Volúmenes persistentes
+volumes:
+  mongo_data:
+
+# 🌐  Red interna compartida
+networks:
+  qp_network:
+    driver: bridge
