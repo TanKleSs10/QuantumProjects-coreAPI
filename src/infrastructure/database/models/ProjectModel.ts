@@ -1,10 +1,18 @@
-import { getModelForClass, modelOptions, prop, Ref } from "@typegoose/typegoose";
+import {
+  getModelForClass,
+  modelOptions,
+  prop,
+  Ref,
+} from "@typegoose/typegoose";
 import { ProjectStatus } from "@src/domain/entities/Project";
 import type { TaskModel } from "@src/infrastructure/database/models/TaskModel";
 import type { TeamModel } from "@src/infrastructure/database/models/TeamModel";
 import type { UserModel } from "@src/infrastructure/database/models/UserModel";
 
-@modelOptions({ schemaOptions: { timestamps: true, collection: "projects" }, options: { customName: "Project" } })
+@modelOptions({
+  schemaOptions: { timestamps: true, collection: "projects" },
+  options: { customName: "Project" },
+})
 export class ProjectModel {
   @prop({ required: true, trim: true })
   public title!: string;
@@ -21,7 +29,12 @@ export class ProjectModel {
   @prop({ ref: "Task", default: [] })
   public tasks!: Ref<TaskModel>[];
 
-  @prop({ enum: ProjectStatus, type: () => String, default: ProjectStatus.ACTIVE, index: true })
+  @prop({
+    enum: ProjectStatus,
+    type: () => String,
+    default: ProjectStatus.ACTIVE,
+    index: true,
+  })
   public status!: ProjectStatus;
 
   @prop({ type: () => [String], default: [] })

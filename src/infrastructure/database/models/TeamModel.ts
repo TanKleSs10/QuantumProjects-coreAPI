@@ -1,8 +1,16 @@
-import { getModelForClass, modelOptions, prop, Ref } from "@typegoose/typegoose";
+import {
+  getModelForClass,
+  modelOptions,
+  prop,
+  Ref,
+} from "@typegoose/typegoose";
 import type { ProjectModel } from "@src/infrastructure/database/models/ProjectModel";
 import type { UserModel } from "@src/infrastructure/database/models/UserModel";
 
-@modelOptions({ schemaOptions: { timestamps: true, collection: "teams" }, options: { customName: "Team" } })
+@modelOptions({
+  schemaOptions: { timestamps: true, collection: "teams" },
+  options: { customName: "Team" },
+})
 export class TeamModel {
   @prop({ required: true, trim: true })
   public name!: string;
