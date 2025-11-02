@@ -57,4 +57,52 @@ export class User {
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }
+
+  public static fromObject(obj: unknown): User {
+    if (typeof obj !== "object" || obj === null) {
+      throw new Error("Invalid object: expected a non-null object");
+    }
+
+    const {
+      id,
+      name,
+      email,
+      passwordHash,
+      role,
+      avatarUrl,
+      bio,
+      teamIds,
+      projectIds,
+      notificationIds,
+      createdAt,
+      updatedAt,
+    } = obj as Partial<UserProps>;
+
+    // Validaciones mínimas obligatorias
+    if (!id || typeof id !== "string")
+      throw new Error("Missing or invalid 'id'");
+    if (!name || typeof name !== "string")
+      throw new Error("Missing or invalid 'name'");
+    if (!email || typeof email !== "string")
+      throw new Error("Missing or invalid 'email'");
+    if (!passwordHash || typeof passwordHash !== "string")
+      throw new Error("Missing or invalid 'passwordHash'");
+    if (!role || !Object.values(UserRole).includes(role))
+      throw new Error(`Invalid or missing 'role': ${role}`);
+
+    return new User({
+      id,
+      name,
+      email,
+      passwordHash,
+      role,
+      avatarUrl,
+      bio,
+      teamIds: Array.isArray(teamIds) ? teamIds : [],
+      projectIds: Array.isArray(projectIds) ? projectIds : [],
+      notificationIds: Array.isArray(notificationIds) ? notificationIds : [],
+      createdAt: createdAt ? new Date(createdAt) : new Date(),
+      updatedAt: updatedAt ? new Date(updatedAt) : new Date(),
+    });
+  }
 }
