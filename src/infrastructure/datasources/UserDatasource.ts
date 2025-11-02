@@ -23,6 +23,16 @@ export class UserDatasource implements IUserDatasource {
     }
   }
 
+  async getUserByEmail(email: string): Promise<User> {
+    try {
+      const userFind = await UserMongoModel.findOne({ email });
+      if (!userFind) throw new Error("User not found");
+      return User.fromObject(userFind.toObject());
+    } catch (error) {
+      throw new Error(`Error retrieving user: ${(error as Error).message}`);
+    }
+  }
+
   async getAllUsers(): Promise<User[]> {
     try {
       const users = await UserMongoModel.find();
