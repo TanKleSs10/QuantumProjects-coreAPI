@@ -14,7 +14,8 @@ export class JwtAdapter implements IJwtAdapter {
 
   sign(payload: object, expiresIn?: string): string {
     try {
-      // TypeScript has strict typing for expiresIn, using any to bypass
+      // Note: expiresIn is typed as string in our interface, but jsonwebtoken expects
+      // a template literal type StringValue. Type assertion is needed here.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return jwt.sign(payload, this.secret, expiresIn ? { expiresIn: expiresIn as any } : {});
     } catch (error) {

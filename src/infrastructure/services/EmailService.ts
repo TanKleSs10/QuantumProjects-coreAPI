@@ -1,4 +1,5 @@
 import { IMailAdapter } from "@src/domain/ports/IMailAdapter";
+import { envs } from "@src/config/envs";
 import { logger } from "@src/infrastructure/logs";
 
 export class EmailService {
@@ -11,7 +12,7 @@ export class EmailService {
     const html = `
       <h1>Email Verification</h1>
       <p>Please verify your email address by clicking the link below:</p>
-      <a href="${process.env.FRONTEND_URL || "http://localhost:3000"}/verify-email?token=${token}">
+      <a href="${envs.FRONTEND_URL}/verify-email?token=${token}">
         Verify Email
       </a>
       <p>If you did not request this email, please ignore it.</p>
@@ -26,7 +27,7 @@ export class EmailService {
     const html = `
       <h1>Password Reset</h1>
       <p>You requested to reset your password. Click the link below to proceed:</p>
-      <a href="${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password?token=${token}">
+      <a href="${envs.FRONTEND_URL}/reset-password?token=${token}">
         Reset Password
       </a>
       <p>If you did not request this email, please ignore it.</p>
