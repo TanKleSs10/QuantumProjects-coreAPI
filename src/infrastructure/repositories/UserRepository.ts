@@ -27,7 +27,10 @@ export class UserRepository implements IUserRepository {
     try {
       return await this.userDatasource.getUserById(id);
     } catch (error) {
-      if (error instanceof InfrastructureError && error.message === "User not found") {
+      if (
+        error instanceof InfrastructureError &&
+        error.message === "User not found"
+      ) {
         return null;
       }
       throw new RepositoryError("Error in UserRepository getUserById", {
@@ -40,7 +43,10 @@ export class UserRepository implements IUserRepository {
     try {
       return await this.userDatasource.getUserByEmail(email);
     } catch (error) {
-      if (error instanceof InfrastructureError && error.message === "User not found") {
+      if (
+        error instanceof InfrastructureError &&
+        error.message === "User not found"
+      ) {
         return null;
       }
       throw new RepositoryError("Error in UserRepository getUserByEmail", {
@@ -49,11 +55,14 @@ export class UserRepository implements IUserRepository {
     }
   }
 
-  async getAllUsers(): Promise<User[]> {
+  async getAllUsers(): Promise<User[] | []> {
     try {
       return await this.userDatasource.getAllUsers();
     } catch (error) {
-      if (error instanceof InfrastructureError && error.message === "No users found") {
+      if (
+        error instanceof InfrastructureError &&
+        error.message === "No users found"
+      ) {
         return [];
       }
       throw new RepositoryError("Error in UserRepository getAllUsers", {
@@ -69,7 +78,10 @@ export class UserRepository implements IUserRepository {
     try {
       return await this.userDatasource.updateUser(userId, updateData);
     } catch (error) {
-      if (error instanceof InfrastructureError && error.message === "User not found") {
+      if (
+        error instanceof InfrastructureError &&
+        error.message === "User not found"
+      ) {
         return null;
       }
       throw new RepositoryError("Error in UserRepository updateUser", {
@@ -82,7 +94,10 @@ export class UserRepository implements IUserRepository {
     try {
       return await this.userDatasource.deleteUser(id);
     } catch (error) {
-      if (error instanceof InfrastructureError && error.message === "User not found") {
+      if (
+        error instanceof InfrastructureError &&
+        error.message === "User not found"
+      ) {
         return false;
       }
       throw new RepositoryError("Error in UserRepository deleteUser", {

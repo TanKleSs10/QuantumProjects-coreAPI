@@ -17,7 +17,11 @@ export class JwtAdapter implements IJwtAdapter {
       // Note: expiresIn is typed as string in our interface, but jsonwebtoken expects
       // a template literal type StringValue. Type assertion is needed here.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return jwt.sign(payload, this.secret, expiresIn ? { expiresIn: expiresIn as any } : {});
+      return jwt.sign(
+        payload,
+        this.secret,
+        expiresIn ? { expiresIn: expiresIn as any } : {},
+      );
     } catch (error) {
       throw new Error(
         `JWT signing failed: ${error instanceof Error ? error.message : String(error)}`,

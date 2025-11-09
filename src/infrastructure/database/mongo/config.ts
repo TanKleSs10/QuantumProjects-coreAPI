@@ -18,7 +18,9 @@ export class MongoConfig {
   async connect(): Promise<void> {
     try {
       await mongoose.connect(this.mongoUri);
-      this.logger.info("Connected to MongoDB");
+      this.logger.info("Connected to MongoDB", {
+        dbName: mongoose.connection.name,
+      });
     } catch (err) {
       this.logger.error("Error connecting to MongoDB", { error: err });
     }

@@ -25,6 +25,8 @@ export class Server {
 
   public start(): void {
     // Routes
+    this.app.use(express.json());
+    this.app.use(express.urlencoded({ extended: true }));
     this.app.use(this.routes);
 
     this.httpServer.listen(this.port, () => {

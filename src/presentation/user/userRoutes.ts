@@ -26,7 +26,19 @@ export class UserRoutes {
       logger.child("UserController"),
     );
 
+    // Create
     router.post("/", controller.createUser);
+
+    // Read
+    router.get("/", controller.getAllUsers);
+    router.get("/:id", controller.getUserById);
+    router.get("/email/:email", controller.getUserByEmail);
+
+    // Update
+    router.put("/:id", controller.updateUser);
+
+    //Delete
+    router.delete("/:id", controller.deleteUser);
 
     return router;
   }

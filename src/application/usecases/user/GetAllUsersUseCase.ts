@@ -15,6 +15,7 @@ export class GetAllUsersUseCase implements IGetAllUsersUseCase {
   async execute(): Promise<User[]> {
     const users = await this.userRepository.getAllUsers();
 
+    if (users === null) return [];
     if (!users.length) {
       this.logger?.info("No users found in repository");
       return [];

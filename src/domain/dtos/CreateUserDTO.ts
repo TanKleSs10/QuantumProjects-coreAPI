@@ -1,15 +1,15 @@
-import { z } from "zod";
 import { UserRole } from "@src/domain/entities/User";
+import z from "zod";
 
 /**
  * Validation schema for creating a new user.
  */
 export const CreateUserSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
-  email: z.string().trim().email(),
+  email: z.email("Email must be a valid email address"),
   password: z.string().min(8, "Password must contain at least 8 characters"),
-  role: z.nativeEnum(UserRole).default(UserRole.DEVELOPER),
-  avatarUrl: z.string().url().optional(),
+  role: z.enum(UserRole).default(UserRole.DEVELOPER),
+  avatarUrl: z.url().optional(),
   bio: z.string().max(500).optional(),
   teamIds: z.array(z.string()).default([]),
   projectIds: z.array(z.string()).default([]),

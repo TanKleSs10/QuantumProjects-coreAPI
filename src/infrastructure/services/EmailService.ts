@@ -12,7 +12,7 @@ export class EmailService {
     const html = `
       <h1>Email Verification</h1>
       <p>Please verify your email address by clicking the link below:</p>
-      <a href="${envs.FRONTEND_URL}/verify-email?token=${token}">
+      <a href="${envs.FRONTEND_URL ?? "https://www.quantummd.com"}/verify-email?token=${token}">
         Verify Email
       </a>
       <p>If you did not request this email, please ignore it.</p>
@@ -27,7 +27,7 @@ export class EmailService {
     const html = `
       <h1>Password Reset</h1>
       <p>You requested to reset your password. Click the link below to proceed:</p>
-      <a href="${envs.FRONTEND_URL}/reset-password?token=${token}">
+      <a href="${envs.FRONTEND_URL ?? "https://www.quantummd.com"}/reset-password?token=${token}">
         Reset Password
       </a>
       <p>If you did not request this email, please ignore it.</p>

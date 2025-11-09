@@ -28,7 +28,9 @@ export class UserDatasource implements IUserDatasource {
       if (error instanceof InfrastructureError) {
         throw error;
       }
-      throw new InfrastructureError("Error retrieving user by id", { cause: error });
+      throw new InfrastructureError("Error retrieving user by id", {
+        cause: error,
+      });
     }
   }
 
@@ -43,16 +45,19 @@ export class UserDatasource implements IUserDatasource {
       if (error instanceof InfrastructureError) {
         throw error;
       }
-      throw new InfrastructureError("Error retrieving user by email", { cause: error });
+      throw new InfrastructureError("Error retrieving user by email", {
+        cause: error,
+      });
     }
   }
 
-  async getAllUsers(): Promise<User[]> {
+  async getAllUsers(): Promise<User[] | []> {
     try {
       const users = await UserMongoModel.find();
-      if (!users.length) {
-        throw new InfrastructureError("No users found");
+      if (users.length === 0) {
+        return [];
       }
+      if (!users) throw new InfrastructureError("Error querying users");
       return users.map((user) => User.fromObject(user.toObject()));
     } catch (error) {
       if (error instanceof InfrastructureError) {
