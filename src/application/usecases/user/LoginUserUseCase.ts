@@ -21,7 +21,7 @@ export class LoginUserUseCase implements ILoginUserUseCase {
 
     const isValidPassword = await this.securityService.verifyPassword(
       password,
-      user.passwordHash,
+      user.password,
     );
 
     if (!isValidPassword) {

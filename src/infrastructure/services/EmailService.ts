@@ -1,40 +1,67 @@
 import { IMailAdapter } from "@src/domain/ports/IMailAdapter";
+import { User } from "@src/domain/entities/User";
+import { IEmailService } from "@src/domain/services/IEmailService";
 import { envs } from "@src/config/envs";
 import { logger } from "@src/infrastructure/logs";
+import { renderTemplate, TemplateVariables } from "@src/infrastructure/email/templateEngine";
+import { EmailSendingError } from "@src/shared/errors/EmailSendingError";
 
-export class EmailService {
+export class EmailService implements IEmailService {
   private readonly log = logger.child("EmailService");
+  private readonly baseUrl = envs.APP_URL || envs.FRONTEND_URL;
 
-  constructor(private mailAdapter: IMailAdapter) {}
+  constructor(private readonly mailAdapter: IMailAdapter) {}
 
-  async sendVerificationEmail(to: string, token: string): Promise<void> {
-    const subject = "Verify your email address";
-    const html = `
-      <h1>Email Verification</h1>
-      <p>Please verify your email address by clicking the link below:</p>
-      <a href="${envs.FRONTEND_URL ?? "https://www.quantummd.com"}/verify-email?token=${token}">
-        Verify Email
-      </a>
-      <p>If you did not request this email, please ignore it.</p>
-    `;
-
-    this.log.info("Sending verification email", { to });
-    await this.mailAdapter.sendMail(to, subject, html);
+  async sendVerificationEmail(user: User, token: string): Promise<void> {
+    const link = this.buildLink("verify-email", token);
+    await this.sendTemplatedEmail(user.email, "Verify your email", "verification", {
+      username: user.name,
+      link,
+    });
   }
 
-  async sendPasswordResetEmail(to: string, token: string): Promise<void> {
-    const subject = "Reset your password";
-    const html = `
-      <h1>Password Reset</h1>
-      <p>You requested to reset your password. Click the link below to proceed:</p>
-      <a href="${envs.FRONTEND_URL ?? "https://www.quantummd.com"}/reset-password?token=${token}">
-        Reset Password
-      </a>
-      <p>If you did not request this email, please ignore it.</p>
-      <p>This link will expire in 1 hour.</p>
-    `;
+  async sendPasswordResetEmail(user: User, token: string): Promise<void> {
+    const link = this.buildLink("reset-password", token);
+    await this.sendTemplatedEmail(user.email, "Reset your password", "password-reset", {
+      username: user.name,
+      link,
+    });
+  }
 
-    this.log.info("Sending password reset email", { to });
-    await this.mailAdapter.sendMail(to, subject, html);
+  async sendNotificationEmail(to: string, subject: string, htmlContent: string): Promise<void> {
+    await this.sendTemplatedEmail(to, subject, "notification", {
+      subject,
+      content: htmlContent,
+    });
+  }
+
+  private async sendTemplatedEmail(
+    to: string,
+    subject: string,
+    templateName: string,
+    variables: TemplateVariables,
+  ): Promise<void> {
+    try {
+      const html = await renderTemplate(templateName, variables);
+      this.log.info("Sending email", { to, subject, templateName });
+      await this.mailAdapter.sendMail(to, subject, html);
+    } catch (error) {
+      this.log.error("Email delivery failed", {
+        to,
+        subject,
+        templateName,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      if (error instanceof EmailSendingError) {
+        throw error;
+      }
+      throw new EmailSendingError("Unable to send email", { cause: error });
+    }
+  }
+
+  private buildLink(pathname: string, token: string): string {
+    const normalizedBaseUrl = this.baseUrl.replace(/\/$/, "");
+    const encodedToken = encodeURIComponent(token);
+    return `${normalizedBaseUrl}/${pathname}?token=${encodedToken}`;
   }
 }

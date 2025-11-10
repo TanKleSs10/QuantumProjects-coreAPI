@@ -17,7 +17,7 @@ export interface UserProps {
   email: string;
   password: string;
   role: UserRole;
-  isVerefied: boolean;
+  isVerified: boolean;
   avatarUrl?: string;
   bio?: string;
   teamIds?: string[];
@@ -36,7 +36,7 @@ export class User {
   public email: string;
   public password: string;
   public role: UserRole;
-  public isVerefied: boolean = false;
+  public isVerified: boolean = false;
   public avatarUrl?: string;
   public bio?: string;
   public teamIds: string[];
@@ -53,7 +53,7 @@ export class User {
     this.role = props.role;
     this.avatarUrl = props.avatarUrl;
     this.bio = props.bio;
-    this.isVerefied = props.isVerefied;
+    this.isVerified = props.isVerified;
     this.teamIds = props.teamIds ?? [];
     this.projectIds = props.projectIds ?? [];
     this.notificationIds = props.notificationIds ?? [];
@@ -71,11 +71,11 @@ export class User {
       id: obj._id?.toString?.() ?? obj.id,
       name: obj.name,
       email: obj.email,
-      password: obj.password, // 👈 aceptar ambas
+      password: obj.password ?? obj.passwordHash,
       role: obj.role,
       avatarUrl: obj.avatarUrl,
       bio: obj.bio,
-      isVerefied: obj.isVerefied ?? false,
+      isVerified: obj.isVerified ?? obj.isVerefied ?? false,
       teamIds: obj.teamIds ?? obj.teams ?? [],
       projectIds: obj.projectIds ?? obj.projects ?? [],
       notificationIds: obj.notificationIds ?? obj.notifications ?? [],
@@ -88,7 +88,7 @@ export class User {
     if (!normalized.name) throw new Error("Missing or invalid 'name'");
     if (!normalized.email) throw new Error("Missing or invalid 'email'");
     if (!normalized.password)
-      throw new Error("Missing or invalid 'passwordHash'");
+      throw new Error("Missing or invalid 'password'");
     if (!Object.values(UserRole).includes(normalized.role))
       throw new Error(`Invalid or missing 'role': ${normalized.role}`);
 

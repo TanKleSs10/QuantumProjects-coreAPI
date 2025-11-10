@@ -14,6 +14,8 @@ El servicio se construye siguiendo Clean Architecture para mantener las reglas d
 - **Winston** como logger centralizado.
 - **Grafana + Loki** para observabilidad y visualización de métricas.
 - **Docker Compose** para orquestar los servicios de desarrollo.
+- **Nodemailer + plantillas HTML** para notificaciones transaccionales.
+- **JWT (jsonwebtoken)** para flujos de verificación y recuperación de acceso.
 
 ### Estructura de carpetas
 ```
@@ -35,15 +37,24 @@ La infraestructura disponible actualmente incluye la configuración del servidor
 ### Variables de entorno mínimas
 | Variable | Descripción | Ejemplo |
 |----------|-------------|---------|
-| `PORT` | Puerto expuesto por la API | `4000`
-| `NODE_ENV` | Entorno de ejecución (`development`, `staging`, `production`) | `development`
-| `MONGODB_URI` | Cadena de conexión para la base de datos | `mongodb://root:pass@localhost:27017/quantum_projects?authSource=admin`
-| `MONGO_DB_NAME` | Nombre de la base al levantar Mongo con Docker | `quantum_projects`
-| `MONGO_ROOT_USER` | Usuario administrador para Mongo (Docker) | `admin`
-| `MONGO_ROOT_PASSWORD` | Contraseña del usuario administrador (Docker) | `supersecret`
-| `LOKI_HOST` | Endpoint HTTP del servicio Loki | `http://loki:3100`
-| `GF_USER` | Usuario administrador inicial de Grafana | `admin`
-| `GF_PASS` | Contraseña del usuario de Grafana | `admin`
+| `PORT` | Puerto expuesto por la API | `4000` |
+| `NODE_ENV` | Entorno de ejecución (`development`, `staging`, `production`) | `development` |
+| `MONGODB_URI` | Cadena de conexión para la base de datos | `mongodb://root:pass@localhost:27017/quantum_projects?authSource=admin` |
+| `MONGO_DB_NAME` | Nombre de la base al levantar Mongo con Docker | `quantum_projects` |
+| `MONGO_ROOT_USER` | Usuario administrador para Mongo (Docker) | `admin` |
+| `MONGO_ROOT_PASSWORD` | Contraseña del usuario administrador (Docker) | `supersecret` |
+| `LOKI_HOST` | Endpoint HTTP del servicio Loki | `http://loki:3100` |
+| `GF_USER` | Usuario administrador inicial de Grafana | `admin` |
+| `GF_PASS` | Contraseña del usuario de Grafana | `admin` |
+| `APP_URL` | URL base pública del backend para componer enlaces de email | `https://api.quantum.md` |
+| `FRONTEND_URL` | URL del frontend utilizada como fallback para enlaces | `https://app.quantum.md` |
+| `JWT_SECRET` | Clave privada usada para firmar tokens JWT | `super_secret_key` |
+| `JWT_EXPIRES_IN` | Tiempo de expiración por defecto de los tokens | `1h` |
+| `SMTP_HOST` | Host del proveedor SMTP | `smtp.mailgun.org` |
+| `SMTP_PORT` | Puerto del servicio SMTP | `587` |
+| `SMTP_USER` | Usuario/identidad del remitente SMTP | `postmaster@mailgun.org` |
+| `SMTP_PASS` | Contraseña o API key del proveedor SMTP | `key-123abc` |
+| `SMTP_SECURE` | Usa TLS (true/false según el puerto configurado) | `false` |
 
 > Crea un archivo `.env` basado en `.env-template` y completa las variables requeridas.
 
@@ -65,6 +76,23 @@ Servicios incluidos:
 - `loki`: receptor de logs centralizado accesible en `http://localhost:3100`.
 - `grafana`: interfaz de observabilidad disponible en `http://localhost:3000` con el usuario y contraseña configurados vía entorno.
 
+## 🔐 Autenticación, verificación y notificaciones
+
+Los flujos de identidad se desacoplan mediante puertos/adaptadores:
+
+- `SecurityService` orquesta hashing con **Scrypt** y tokens firmados por `JWTAdapter`.
+- `EmailService` consume `IMailAdapter` (implementado con **Nodemailer**) y renderiza plantillas HTML desde `src/infrastructure/email/templates/` mediante un motor ligero de reemplazo de variables.
+
+### Flujos disponibles
+
+| Caso | Descripción | Endpoint |
+|------|-------------|----------|
+| Verificación de cuenta | Tras crear un usuario, se envía un correo con un enlace firmado. El controlador valida el token y activa la cuenta. | `GET /api/auth/verify-email?token=<jwt>` |
+| Restablecimiento de contraseña | Permite actualizar la contraseña validando el token enviado por correo. | `POST /api/auth/reset-password` |
+| Notificaciones HTML | `EmailService.sendNotificationEmail` admite plantillas con variables personalizadas para avisos transaccionales. | — |
+
+Cada plantilla utiliza variables como `${username}` o `${link}` que son reemplazadas dinámicamente por `templateEngine.ts`. Los HTML se pueden extender o personalizar manteniendo el principio de responsabilidad única.
+
 ## 🧩 Observabilidad
 La API utiliza Winston como logger principal. En desarrollo los logs se muestran en consola de forma inmediata. En entornos productivos, Winston envía los eventos a Loki en formato JSON para su almacenamiento centralizado.
 
@@ -81,7 +109,7 @@ La API utiliza Winston como logger principal. En desarrollo los logs se muestran
 ## 🚀 Próximas etapas
 1. **Módulo de proyectos**: modelado de entidades, casos de uso y endpoints CRUD.
 2. **Panel visual de tareas**: endpoints y vistas para tableros colaborativos tipo kanban.
-3. **Autenticación y perfiles**: integración con identity provider, perfiles profesionales y permisos.
+3. **Perfiles avanzados y scopes**: integración con identity provider externo, perfiles profesionales y permisos.
 4. **Escalado a SaaS freemium**: automatización de onboarding, planes de suscripción y observabilidad multi-tenant.
 
 ---

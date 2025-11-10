@@ -90,6 +90,38 @@ export class UserRepository implements IUserRepository {
     }
   }
 
+  async verifyUser(userId: string): Promise<User | null> {
+    try {
+      return await this.userDatasource.markUserAsVerified(userId);
+    } catch (error) {
+      if (
+        error instanceof InfrastructureError &&
+        error.message === "User not found"
+      ) {
+        return null;
+      }
+      throw new RepositoryError("Error in UserRepository verifyUser", {
+        cause: error,
+      });
+    }
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<User | null> {
+    try {
+      return await this.userDatasource.updatePassword(userId, passwordHash);
+    } catch (error) {
+      if (
+        error instanceof InfrastructureError &&
+        error.message === "User not found"
+      ) {
+        return null;
+      }
+      throw new RepositoryError("Error in UserRepository updatePassword", {
+        cause: error,
+      });
+    }
+  }
+
   async deleteUser(id: string): Promise<boolean> {
     try {
       return await this.userDatasource.deleteUser(id);
