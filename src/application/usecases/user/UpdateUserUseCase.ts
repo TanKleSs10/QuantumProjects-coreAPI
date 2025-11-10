@@ -15,14 +15,13 @@ export class UpdateUserUseCase implements IUpdateUserUseCase {
   ) {}
 
   async execute(id: string, data: Partial<CreateUserDTO>): Promise<User> {
-    const updatePayload: Partial<CreateUserDTO> & { passwordHash?: string } = {
+    const updatePayload: Partial<CreateUserDTO> = {
       ...data,
     };
 
     if (data.password) {
       const hashedPassword = await this.securityService.hashPassword(data.password);
-      updatePayload.passwordHash = hashedPassword;
-      delete updatePayload.password;
+      updatePayload.password = hashedPassword;
     }
 
     const updatedUser = await this.userRepository.updateUser(id, updatePayload);

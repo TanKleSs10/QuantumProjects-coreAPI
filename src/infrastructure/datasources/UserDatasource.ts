@@ -89,6 +89,44 @@ export class UserDatasource implements IUserDatasource {
     }
   }
 
+  async markUserAsVerified(id: string): Promise<User> {
+    try {
+      const userUpdated = await UserMongoModel.findByIdAndUpdate(
+        id,
+        { $set: { isVerified: true } },
+        { new: true },
+      );
+      if (!userUpdated) {
+        throw new InfrastructureError("User not found");
+      }
+      return User.fromObject(userUpdated.toObject());
+    } catch (error) {
+      if (error instanceof InfrastructureError) {
+        throw error;
+      }
+      throw new InfrastructureError("Error verifying user", { cause: error });
+    }
+  }
+
+  async updatePassword(id: string, passwordHash: string): Promise<User> {
+    try {
+      const userUpdated = await UserMongoModel.findByIdAndUpdate(
+        id,
+        { $set: { password: passwordHash } },
+        { new: true },
+      );
+      if (!userUpdated) {
+        throw new InfrastructureError("User not found");
+      }
+      return User.fromObject(userUpdated.toObject());
+    } catch (error) {
+      if (error instanceof InfrastructureError) {
+        throw error;
+      }
+      throw new InfrastructureError("Error updating password", { cause: error });
+    }
+  }
+
   async deleteUser(id: string): Promise<boolean> {
     try {
       const userDeleted = await UserMongoModel.findByIdAndDelete(id);

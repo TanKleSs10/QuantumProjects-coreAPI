@@ -1,4 +1,7 @@
+import { User } from "@src/domain/entities/User";
+
 export interface IEmailService {
-  sendVerificationEmail(to: string, token: string): Promise<void>;
-  sendPasswordResetEmail(to: string, token: string): Promise<void>;
+  sendVerificationEmail(user: User, token: string): Promise<void>;
+  sendPasswordResetEmail(user: User, token: string): Promise<void>;
+  sendNotificationEmail(to: string, subject: string, htmlContent: string): Promise<void>;
 }

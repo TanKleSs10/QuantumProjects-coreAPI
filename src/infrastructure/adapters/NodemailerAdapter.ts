@@ -1,38 +1,31 @@
-import { IMailAdapter } from "@src/domain/ports/IMailAdapter";
-import { logger } from "@src/infrastructure/logs";
 import nodemailer from "nodemailer";
+
+import { IMailAdapter } from "@src/domain/ports/IMailAdapter";
+import { envs } from "@src/config/envs";
+import { logger } from "@src/infrastructure/logs";
+import { EmailSendingError } from "@src/shared/errors/EmailSendingError";
 
 export class NodemailerAdapter implements IMailAdapter {
   private readonly transporter: nodemailer.Transporter;
   private readonly smtpUser: string;
+  private readonly log = logger.child("NodemailerAdapter");
 
   constructor() {
-    const smtpHost = process.env.SMTP_HOST;
-    const smtpPort = process.env.SMTP_PORT;
-    const smtpUser = process.env.SMTP_USER;
-    const smtpPass = process.env.SMTP_PASS;
-    const smtpSecure = process.env.SMTP_SECURE === "true";
-
-    if (!smtpHost || !smtpPort || !smtpUser || !smtpPass) {
-      throw new Error(
-        "SMTP configuration is incomplete. Required: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS",
-      );
-    }
-
-    this.smtpUser = smtpUser;
+    this.smtpUser = envs.SMTP_USER;
     this.transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: parseInt(smtpPort, 10),
-      secure: smtpSecure,
+      host: envs.SMTP_HOST,
+      port: envs.SMTP_PORT,
+      secure: envs.SMTP_SECURE,
       auth: {
-        user: smtpUser,
-        pass: smtpPass,
+        user: envs.SMTP_USER,
+        pass: envs.SMTP_PASS,
       },
     });
   }
 
   async sendMail(to: string, subject: string, html: string): Promise<void> {
     try {
+      this.log.info("Sending email", { to, subject });
       await this.transporter.sendMail({
         from: this.smtpUser,
         to,
@@ -40,14 +33,12 @@ export class NodemailerAdapter implements IMailAdapter {
         html,
       });
     } catch (error) {
-      logger.error("Error sending email", {
+      this.log.error("Error sending email", {
         error: error instanceof Error ? error.message : String(error),
         to,
         subject,
       });
-      throw new Error(
-        `Failed to send email: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      throw new EmailSendingError("Failed to deliver email", { cause: error });
     }
   }
 }

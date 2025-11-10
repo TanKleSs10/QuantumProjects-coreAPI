@@ -7,5 +7,7 @@ export interface IUserDatasource {
   getUserByEmail(email: string): Promise<User>;
   getAllUsers(): Promise<User[] | []>;
   updateUser(userId: string, userData: Partial<CreateUserDTO>): Promise<User>;
+  markUserAsVerified(userId: string): Promise<User>;
+  updatePassword(userId: string, passwordHash: string): Promise<User>;
   deleteUser(userId: string): Promise<boolean>;
 }

@@ -23,7 +23,7 @@ export class CreateUserUseCase implements ICreateUserUseCase {
 
     const userDataWithHashedPassword = {
       ...userData,
-      passwordHash: passwordHashed,
+      password: passwordHashed,
     };
 
     const user = await this.userRepository.createUser(
@@ -34,10 +34,7 @@ export class CreateUserUseCase implements ICreateUserUseCase {
       { id: user.id, email: user.email },
       "1h",
     );
-    await this.emailService.sendVerificationEmail(
-      user.email,
-      verificationToken,
-    );
+    await this.emailService.sendVerificationEmail(user, verificationToken);
 
     return user;
   }
