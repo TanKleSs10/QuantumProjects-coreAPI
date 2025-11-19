@@ -29,18 +29,23 @@ async function loadTemplate(templateName: string): Promise<string> {
     } catch (error) {
       // Continue with next root when file is not found
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw new EmailTemplateError(`Template '${templateName}' could not be loaded`, {
-          cause: error,
-        });
+        throw new EmailTemplateError(
+          `Template '${templateName}' could not be loaded`,
+          {
+            cause: error,
+          },
+        );
       }
     }
   }
 
-  throw new EmailTemplateError(`Template '${templateName}' could not be located`);
+  throw new EmailTemplateError(
+    `Template '${templateName}' could not be located`,
+  );
 }
 
 function interpolate(template: string, variables: TemplateVariables): string {
-  return template.replace(/\$\{(\w+)\}/g, (match, key) => {
+  return template.replace(/\$\{(\w+)\}/g, (_match, key) => {
     const value = variables[key];
     if (value === undefined || value === null) {
       return "";
@@ -60,8 +65,11 @@ export async function renderTemplate(
     if (error instanceof EmailTemplateError) {
       throw error;
     }
-    throw new EmailTemplateError(`Failed to render template '${templateName}'`, {
-      cause: error,
-    });
+    throw new EmailTemplateError(
+      `Failed to render template '${templateName}'`,
+      {
+        cause: error,
+      },
+    );
   }
 }

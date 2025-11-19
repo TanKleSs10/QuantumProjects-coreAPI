@@ -15,7 +15,6 @@ export class NodemailerAdapter implements IMailAdapter {
     this.transporter = nodemailer.createTransport({
       host: envs.SMTP_HOST,
       port: envs.SMTP_PORT,
-      secure: envs.SMTP_SECURE,
       auth: {
         user: envs.SMTP_USER,
         pass: envs.SMTP_PASS,
@@ -24,6 +23,12 @@ export class NodemailerAdapter implements IMailAdapter {
   }
 
   async sendMail(to: string, subject: string, html: string): Promise<void> {
+    this.log.debug("Preparing to send email", {
+      host: envs.SMTP_HOST,
+      user: envs.SMTP_USER,
+      to,
+      subject,
+    });
     try {
       this.log.info("Sending email", { to, subject });
       await this.transporter.sendMail({

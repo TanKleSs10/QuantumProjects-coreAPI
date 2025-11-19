@@ -23,7 +23,7 @@ export class AuthRoutes {
       logger.child("AuthController"),
     );
 
-    router.get("/verify-email", controller.verifyEmail);
+    router.get("/verify-email/:token", controller.verifyEmail);
     router.post("/reset-password", controller.resetPassword);
 
     return router;

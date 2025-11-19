@@ -23,15 +23,17 @@ export class AuthController {
     private readonly securityService: ISecurityService,
     private readonly userRepository: IUserRepository,
     private readonly logger: ILogger,
-  ) {}
+  ) {
+    this.logger = logger.child("AuthController");
+  }
 
   verifyEmail = async (req: Request, res: Response) => {
-    const token =
-      typeof req.query.token === "string"
-        ? req.query.token
-        : typeof req.body?.token === "string"
-          ? req.body.token
-          : undefined;
+    const token = req.params.token;
+
+    if (!token) {
+      res.status(400).json({ success: false, message: "Token is required" });
+      this.logger.warn("Verify email called without token");
+    }
 
     const useCase = new VerifyEmailUseCase(
       this.securityService,
@@ -94,6 +96,8 @@ export class AuthController {
     this.logger.error("Unexpected auth error", {
       error: error instanceof Error ? error.message : String(error),
     });
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
 }
