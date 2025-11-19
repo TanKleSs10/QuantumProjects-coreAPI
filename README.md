@@ -1,130 +1,96 @@
-# Quantum Projects · Core API
+# Quantum Projects API · MVP Backend de Usuarios
 
-## 🧠 Contexto general
+## Descripción del proyecto
+Quantum Projects es el sistema interno de gestión que impulsa a Quantum MD. La base tecnológica es un backend construido con Node.js, TypeScript, MongoDB y los principios de Clean Architecture para mantener independencia entre capas.
 
-Quantum Projects es la plataforma de gestión de proyectos de la marca Quantum MD orientada a equipos técnicos, agencias y freelancers que necesitan coordinar iniciativas de forma colaborativa. Combina prácticas de productividad tipo ClickUp o Trello con un enfoque social y de portafolio profesional inspirado en Behance/LinkedIn.
+El proyecto se encuentra en la fase **MVP Backend de Usuarios**. El objetivo actual es consolidar la identidad (registro, autenticación y verificación) y exponer un CRUD estable de perfiles. El próximo módulo será un **frontend en Angular**, pero todavía no existe implementación del lado del cliente; este README se enfoca únicamente en la API.
 
-La etapa actual corresponde al backend interno que soportará la operación de Quantum MD. Desde esta base evolucionará hacia un SaaS colaborativo y visual, preparado para escalar con un modelo freemium rentable.
+## Objetivo del MVP Usuarios
+El alcance mínimo viable contempla únicamente:
 
-## ⚙️ Arquitectura y stack
+- Registro de usuarios con hash seguro de contraseñas.
+- Inicio de sesión con JWT firmado por la API.
+- Envío y verificación de correos transaccionales (alta y recuperación).
+- Flujo de verificación por email.
+- CRUD básico de usuarios (crear, leer, actualizar, eliminar).
+- Logger centralizado con posibilidad de enviar a Grafana/Loki.
+- Servicio de envío de correos (templating HTML y adaptador SMTP).
+- Arquitectura limpia y estable para extender módulos.
 
-El servicio se construye siguiendo Clean Architecture para mantener las reglas de negocio aisladas de la infraestructura. El stack principal es:
+Deliberadamente **no incluye**: equipos, proyectos, roles avanzados, notificaciones internas, cargas de archivos masivas, integraciones estilo ClickUp/Trello, OAuth para login ni ningún frontend.
 
-- **Node.js + TypeScript** como runtime y lenguaje principal.
-- **Express** para la capa HTTP.
-- **Mongoose + Typegoose** para el acceso a MongoDB.
-- **Winston** como logger centralizado.
-- **Grafana + Loki** para observabilidad y visualización de métricas.
-- **Docker Compose** para orquestar los servicios de desarrollo.
-- **Nodemailer + plantillas HTML** para notificaciones transaccionales.
-- **JWT (jsonwebtoken)** para flujos de verificación y recuperación de acceso.
+## Arquitectura (Clean Architecture)
+La API se estructura como un monolito modular con dependencias que apuntan hacia el dominio. Las capas principales son:
 
-### Estructura de carpetas
+| Capa | Responsabilidad | Ejemplos |
+| --- | --- | --- |
+| **Presentation** | Rutas HTTP, controladores y middlewares de entrada | `src/presentation/auth`, `src/presentation/user` |
+| **Application (Use Cases)** | Orquesta reglas de negocio y coordina repositorios/servicios | `CreateUserUseCase`, `VerifyEmailUseCase` |
+| **Domain** | Entidades, contratos y DTOs puros | `User`, `IUserRepository`, esquemas Zod |
+| **Infrastructure** | Adaptadores técnicos: MongoDB, Nodemailer, JWT, logger | `UserDatasource`, `SecurityService`, `WinstonLogger` |
 
-```
-src/
-├── domain/           # Reglas de negocio puras (en construcción)
-├── application/      # Casos de uso y orquestadores (en construcción)
-├── infrastructure/   # Integraciones técnicas (DB, logs, drivers)
-├── interfaces/       # Contratos compartidos entre capas
-└── presentation/     # Entradas/salidas del sistema (HTTP, CLI, etc.)
-```
-
-La infraestructura disponible actualmente incluye la configuración del servidor HTTP, la conexión a MongoDB y la capa de logging lista para enviarse a Loki.
-
-## 🧰 Configuración y ejecución
-
-### Requisitos
-
-- Node.js 20+
-- Docker + Docker Compose (opcional pero recomendado)
-
-### Variables de entorno mínimas
-
-| Variable              | Descripción                                                   | Ejemplo                                                                 |
-| --------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `PORT`                | Puerto expuesto por la API                                    | `4000`                                                                  |
-| `NODE_ENV`            | Entorno de ejecución (`development`, `staging`, `production`) | `development`                                                           |
-| `MONGODB_URI`         | Cadena de conexión para la base de datos                      | `mongodb://root:pass@localhost:27017/quantum_projects?authSource=admin` |
-| `MONGO_DB_NAME`       | Nombre de la base al levantar Mongo con Docker                | `quantum_projects`                                                      |
-| `MONGO_ROOT_USER`     | Usuario administrador para Mongo (Docker)                     | `admin`                                                                 |
-| `MONGO_ROOT_PASSWORD` | Contraseña del usuario administrador (Docker)                 | `supersecret`                                                           |
-| `LOKI_HOST`           | Endpoint HTTP del servicio Loki                               | `http://loki:3100`                                                      |
-| `GF_USER`             | Usuario administrador inicial de Grafana                      | `admin`                                                                 |
-| `GF_PASS`             | Contraseña del usuario de Grafana                             | `admin`                                                                 |
-| `APP_URL`             | URL base pública del backend para componer enlaces de email   | `https://api.quantum.md`                                                |
-| `FRONTEND_URL`        | URL del frontend utilizada como fallback para enlaces         | `https://app.quantum.md`                                                |
-| `JWT_SECRET`          | Clave privada usada para firmar tokens JWT                    | `super_secret_key`                                                      |
-| `JWT_EXPIRES_IN`      | Tiempo de expiración por defecto de los tokens                | `1h`                                                                    |
-| `SMTP_HOST`           | Host del proveedor SMTP                                       | `smtp.mailgun.org`                                                      |
-| `SMTP_PORT`           | Puerto del servicio SMTP                                      | `587`                                                                   |
-| `SMTP_USER`           | Usuario/identidad del remitente SMTP                          | `postmaster@mailgun.org`                                                |
-| `SMTP_PASS`           | Contraseña o API key del proveedor SMTP                       | `key-123abc`                                                            |
-| `SMTP_SECURE`         | Usa TLS (true/false según el puerto configurado)              | `false`                                                                 |
-
-> Crea un archivo `.env` basado en `.env-template` y completa las variables requeridas.
-
-### Ejecución en modo desarrollo
-
-```bash
-npm install
-npm run dev
+### Diagrama general
+```mermaid
+graph TD
+  A[Controller] --> B[Use Case]
+  B --> C[Repository]
+  C --> D[Datasource]
+  D --> E[(MongoDB)]
+  B --> F[Services (Security/Email)]
+  F --> G[Adapters (JWT, Nodemailer, Scrypt)]
 ```
 
-El servidor quedará disponible en `http://localhost:<PORT>` y expone actualmente un endpoint de prueba en `/welcome`.
+### Flujo típico
+1. El controlador recibe una request, valida DTOs con Zod y delega el caso de uso.
+2. El caso de uso coordina repositorios y servicios (por ejemplo, hashing de contraseñas o generación de tokens).
+3. El repositorio aplica reglas de negocio menores (p.ej. evitar duplicados) y delega en un datasource específico de Mongo/Typegoose.
+4. Los servicios llaman adaptadores técnicos (JWT, Scrypt, Nodemailer) que encapsulan dependencias externas.
+5. El logger (`WinstonLogger`) añade contexto por scope y puede enviar trazas a Loki/Grafana.
 
-### Ejecución con Docker Compose
+## Estado actual del desarrollo (MVP Usuarios)
+Las tablas siguientes reflejan el avance real encontrado en el código fuente.
 
-```bash
-docker compose up --build
-```
+### Autenticación
+| Feature | Estado | Notas |
+| --- | --- | --- |
+| Registro | ✓ Implementado | `POST /users` crea usuarios, hashea con Scrypt y dispara email de verificación (`CreateUserUseCase`). |
+| Login | ⚠ En progreso | Existe `LoginUserUseCase`, pero no hay controlador ni ruta expuesta para entregar el JWT al cliente. |
+| Envío de JWT | ⚠ En progreso | Generación disponible vía `SecurityService`/`JWTAdapter`, falta exponer respuesta en endpoints públicos. |
+| Verificación por email | ✓ Implementado | Endpoint `GET /auth/verify-email/:token` marca al usuario como verificado. |
+| Hash de contraseñas | ✓ Implementado | `SecurityService` con adaptador Scrypt (`ScryptSecurityAdapter`). |
+| Manejo de errores | ⚠ En progreso | Controladores envuelven errores comunes, pero no existe middleware global ni códigos homogéneos. |
+| Refresh token | ✗ Faltante | No hay contratos ni almacenamiento de refresh tokens. |
 
-Servicios incluidos:
+### Usuarios
+| Feature | Estado | Notas |
+| --- | --- | --- |
+| Crear usuario | ✓ Implementado | Valida con Zod y envía verificación por email antes de persistir. |
+| Obtener usuario actual | ⚠ En progreso | Hay `GET /users/:id`, pero no existe endpoint protegido que derive del JWT (`/me`). |
+| Actualizar usuario | ✓ Implementado | `PUT /users/:id` permite actualizaciones parciales, aunque sin validaciones de ownership ni DTO estrictos. |
+| Eliminar usuario | ✓ Implementado | `DELETE /users/:id`. |
+| Validaciones | ⚠ En progreso | Se usa Zod para alta/actualización, pero no hay sanitización profunda ni verificación de duplicados en controladores. |
 
-- `qp_api`: API de Quantum Projects con hot-reload usando Nodemon.
-- `qp_mongo`: MongoDB 7 con credenciales configurables y volumen persistente.
-- `loki`: receptor de logs centralizado accesible en `http://localhost:3100`.
-- `grafana`: interfaz de observabilidad disponible en `http://localhost:3000` con el usuario y contraseña configurados vía entorno.
+### Infraestructura
+| Feature | Estado | Notas |
+| --- | --- | --- |
+| MongoDB + Typegoose | ✓ Implementado | Configuración en `MongoConfig` y modelos `UserModel`. |
+| Adaptadores (JWT, Nodemailer, Scrypt) | ✓ Implementado | Capas desacopladas respetando Clean Architecture. |
+| EmailService con templating | ✓ Implementado | Motor de plantillas HTML (`templateEngine.ts`) con caché simple. |
+| Logger | ✓ Implementado | `WinstonLogger` con transporte Loki opcional y `logger.child()` por scope. |
+| Seguridad (middlewares) | ✗ Faltante | No existe middleware de autenticación para proteger rutas ni medidas como Helmet/rate limiting. |
+| Envío de correos | ✓ Implementado | `EmailService` y `NodemailerAdapter` listos, faltan plantillas personalizadas finales. |
 
-## 🔐 Autenticación, verificación y notificaciones
+## Configuración rápida
+1. Crea un archivo `.env` basado en `env-template` e incluye variables críticas (`PORT`, `MONGODB_URI`, `JWT_SECRET`, `SMTP_*`).
+2. Instala dependencias y levanta el servidor en modo desarrollo:
+   ```bash
+   npm install
+   npm run dev
+   ```
+3. Opcional: ejecuta `docker compose up --build` para levantar MongoDB + Loki + Grafana junto a la API.
 
-Los flujos de identidad se desacoplan mediante puertos/adaptadores:
-
-- `SecurityService` orquesta hashing con **Scrypt** y tokens firmados por `JWTAdapter`.
-- `EmailService` consume `IMailAdapter` (implementado con **Nodemailer**) y renderiza plantillas HTML desde `src/infrastructure/email/templates/` mediante un motor ligero de reemplazo de variables.
-
-### Flujos disponibles
-
-| Caso                           | Descripción                                                                                                         | Endpoint                                 |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| Verificación de cuenta         | Tras crear un usuario, se envía un correo con un enlace firmado. El controlador valida el token y activa la cuenta. | `GET /api/auth/verify-email?token=<jwt>` |
-| Restablecimiento de contraseña | Permite actualizar la contraseña validando el token enviado por correo.                                             | `POST /api/auth/reset-password`          |
-| Notificaciones HTML            | `EmailService.sendNotificationEmail` admite plantillas con variables personalizadas para avisos transaccionales.    | —                                        |
-
-Cada plantilla utiliza variables como `${username}` o `${link}` que son reemplazadas dinámicamente por `templateEngine.ts`. Los HTML se pueden extender o personalizar manteniendo el principio de responsabilidad única.
-
-## 🧩 Observabilidad
-
-La API utiliza Winston como logger principal. En desarrollo los logs se muestran en consola de forma inmediata. En entornos productivos, Winston envía los eventos a Loki en formato JSON para su almacenamiento centralizado.
-
-1. **Colección de logs**: el `WinstonLogger` empaqueta cada mensaje con `scope`, `environment` y `timestamp`. En producción usa el transporte `winston-loki` para enviar los registros en batch, evitando pérdidas y preservando el formato requerido por Loki.
-2. **Ingesta en Loki**: Loki recibe los eventos etiquetados por aplicación y entorno. La variable `LOKI_HOST` controla el endpoint del servicio.
-3. **Visualización en Grafana**: Grafana se conecta a Loki como datasource (`http://loki:3100`). Desde el panel, consulta las etiquetas (`app`, `environment`, `scope`) para filtrar trazas y construir dashboards KISS con métricas clave como frecuencia de errores, tiempos de respuesta o actividad por módulo.
-
-### Uso rápido del dashboard
-
-- Entra a Grafana (`http://localhost:3000`).
-- Configura Loki como datasource apuntando a `http://loki:3100` (si no está preconfigurado).
-- Crea una nueva vista con la consulta `{app="quantum-projects-api"}` y aplica filtros adicionales como `{scope="Server"}` para aislar módulos.
-- Añade transformaciones simples (count, rate, topk) para visualizar volumen de logs, errores o tendencias por etiqueta.
-
-## 🚀 Próximas etapas
-
-1. **Módulo de proyectos**: modelado de entidades, casos de uso y endpoints CRUD.
-2. **Panel visual de tareas**: endpoints y vistas para tableros colaborativos tipo kanban.
-3. **Perfiles avanzados y scopes**: integración con identity provider externo, perfiles profesionales y permisos.
-4. **Escalado a SaaS freemium**: automatización de onboarding, planes de suscripción y observabilidad multi-tenant.
-
----
-
-Este documento se actualiza conforme avance el desarrollo para mantener alineado el diseño técnico con la visión de Quantum Projects.
+## Próximos pasos inmediatos
+- Exponer `POST /auth/login` que use `LoginUserUseCase` y retorne el JWT.
+- Completar middleware de autenticación para proteger `/users` y derivar un endpoint `/users/me`.
+- Finalizar plantillas HTML de correo (identidad Quantum MD) y flujo completo de verificación.
+- Unificar manejo de errores y DTOs antes de abrir el consumo desde Angular.
