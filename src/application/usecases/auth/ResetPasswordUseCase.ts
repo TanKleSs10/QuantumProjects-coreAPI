@@ -7,7 +7,6 @@ import { InvalidTokenError } from "@src/shared/errors/InvalidTokenError";
 
 interface ResetPayload {
   id: string;
-  email: string;
 }
 
 export class ResetPasswordUseCase {

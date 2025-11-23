@@ -31,7 +31,7 @@ export class CreateUserUseCase implements ICreateUserUseCase {
     );
 
     const verificationToken = await this.securityService.generateToken(
-      { id: user.id, email: user.email },
+      { id: user.id },
       "1h",
     );
     await this.emailService.sendVerificationEmail(user, verificationToken);

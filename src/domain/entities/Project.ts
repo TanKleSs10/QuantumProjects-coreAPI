@@ -12,10 +12,10 @@ export enum ProjectStatus {
  */
 export interface ProjectProps {
   id: string;
-  title: string;
-  description: string;
-  ownerId: string;
-  teamId?: string;
+  name: string;
+  description?: string;
+  createdBy: string;
+  teamId: string;
   taskIds?: string[];
   status?: ProjectStatus;
   tags?: string[];
@@ -29,10 +29,10 @@ export interface ProjectProps {
  */
 export class Project {
   public readonly id: string;
-  public title: string;
-  public description: string;
-  public ownerId: string;
-  public teamId?: string;
+  public name: string;
+  public description?: string;
+  public createdBy: string;
+  public teamId: string;
   public taskIds: string[];
   public status: ProjectStatus;
   public tags: string[];
@@ -42,9 +42,9 @@ export class Project {
 
   constructor(props: ProjectProps) {
     this.id = props.id;
-    this.title = props.title;
+    this.name = props.name;
     this.description = props.description;
-    this.ownerId = props.ownerId;
+    this.createdBy = props.createdBy;
     this.teamId = props.teamId;
     this.taskIds = props.taskIds ?? [];
     this.status = props.status ?? ProjectStatus.ACTIVE;

@@ -7,16 +7,16 @@ import type { UserModel } from "@src/infrastructure/database/models/UserModel";
 @modelOptions({ schemaOptions: { timestamps: true, collection: "projects" }, options: { customName: "Project" } })
 export class ProjectModel {
   @prop({ required: true, trim: true })
-  public title!: string;
+  public name!: string;
 
-  @prop({ required: true, trim: true })
-  public description!: string;
+  @prop({ trim: true })
+  public description?: string;
 
   @prop({ ref: "User", required: true })
-  public owner!: Ref<UserModel>;
+  public createdBy!: Ref<UserModel>;
 
-  @prop({ ref: "Team" })
-  public team?: Ref<TeamModel>;
+  @prop({ ref: "Team", required: true })
+  public team!: Ref<TeamModel>;
 
   @prop({ ref: "Task", default: [] })
   public tasks!: Ref<TaskModel>[];

@@ -4,7 +4,6 @@ import {
   prop,
   Ref,
 } from "@typegoose/typegoose";
-import { UserRole } from "@src/domain/entities/User";
 import type { NotificationModel } from "@src/infrastructure/database/models/NotificationModel";
 import type { ProjectModel } from "@src/infrastructure/database/models/ProjectModel";
 import type { TeamModel } from "@src/infrastructure/database/models/TeamModel";
@@ -28,9 +27,6 @@ export class UserModel {
 
   @prop({ required: true })
   public password!: string;
-
-  @prop({ required: true, enum: UserRole, type: () => String })
-  public role!: UserRole;
 
   @prop({ trim: true })
   public avatarUrl?: string;

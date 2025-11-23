@@ -1,4 +1,3 @@
-import { UserRole } from "@src/domain/entities/User";
 import z from "zod";
 import { CreateUserSchema } from "./CreateUserDTO";
 
@@ -14,7 +13,6 @@ export const UpdateUserSchema = CreateUserSchema.partial().extend({
     .string()
     .min(8, "Password must contain at least 8 characters")
     .optional(),
-  role: z.enum(UserRole).optional(),
 });
 
 /**

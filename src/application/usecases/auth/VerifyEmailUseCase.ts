@@ -7,7 +7,6 @@ import { InvalidTokenError } from "@src/shared/errors/InvalidTokenError";
 
 interface VerificationPayload {
   id: string;
-  email: string;
 }
 
 export class VerifyEmailUseCase {

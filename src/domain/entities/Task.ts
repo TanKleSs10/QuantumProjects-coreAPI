@@ -1,21 +1,5 @@
-/**
- * Enumerates the priorities supported by the task workflow.
- */
-export enum TaskPriority {
-  LOW = "low",
-  MEDIUM = "medium",
-  HIGH = "high",
-  URGENT = "urgent",
-}
-
-/**
- * Enumerates the lifecycle states of a task.
- */
-export enum TaskStatus {
-  PENDING = "pending",
-  IN_PROGRESS = "in-progress",
-  COMPLETED = "completed",
-}
+export const TaskStates = ["todo", "doing", "done"] as const;
+export type TaskState = (typeof TaskStates)[number];
 
 /**
  * Properties required to create a {@link Task} domain entity.
@@ -24,11 +8,10 @@ export interface TaskProps {
   id: string;
   title: string;
   description?: string;
-  assignedToId?: string;
+  createdBy: string;
+  assignedToIds?: string[];
   projectId: string;
-  status?: TaskStatus;
-  priority?: TaskPriority;
-  dueDate?: Date | null;
+  state?: TaskState;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -40,11 +23,10 @@ export class Task {
   public readonly id: string;
   public title: string;
   public description?: string;
-  public assignedToId?: string;
+  public createdBy: string;
+  public assignedToIds: string[];
   public projectId: string;
-  public status: TaskStatus;
-  public priority: TaskPriority;
-  public dueDate?: Date | null;
+  public state: TaskState;
   public readonly createdAt?: Date;
   public readonly updatedAt?: Date;
 
@@ -52,11 +34,10 @@ export class Task {
     this.id = props.id;
     this.title = props.title;
     this.description = props.description;
-    this.assignedToId = props.assignedToId;
+    this.createdBy = props.createdBy;
+    this.assignedToIds = props.assignedToIds ?? [];
     this.projectId = props.projectId;
-    this.status = props.status ?? TaskStatus.PENDING;
-    this.priority = props.priority ?? TaskPriority.MEDIUM;
-    this.dueDate = props.dueDate;
+    this.state = props.state ?? "todo";
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }
