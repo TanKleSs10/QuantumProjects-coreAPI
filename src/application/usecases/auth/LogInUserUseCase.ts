@@ -1,26 +1,31 @@
-import { User } from "@src/domain/entities/User";
+import { TLogInDTO } from "@src/domain/dtos/LogInDTO";
+import { IUserLoginInfo, User } from "@src/domain/entities/User";
 import { IUserRepository } from "@src/domain/repositories/IUserRepository";
 import { ISecurityService } from "@src/domain/services/ISecurityService";
 import { DomainError } from "@src/shared/errors/DomainError";
 
-export interface ILoginUserUseCase {
-  execute(email: string, password: string): Promise<{ user: User; token: string }>;
+export interface ILogInUserUseCase {
+  execute(
+    logInDTO: TLogInDTO,
+  ): Promise<{ user: IUserLoginInfo; token: string }>;
 }
 
-export class LoginUserUseCase implements ILoginUserUseCase {
+export class LogInUserUseCase implements ILogInUserUseCase {
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly securityService: ISecurityService,
   ) {}
 
-  async execute(email: string, password: string): Promise<{ user: User; token: string }> {
-    const user = await this.userRepository.getUserByEmail(email);
+  async execute(
+    logInDTO: TLogInDTO,
+  ): Promise<{ user: IUserLoginInfo; token: string }> {
+    const user = await this.userRepository.getUserByEmail(logInDTO.email);
     if (!user) {
       throw new DomainError("Invalid credentials");
     }
 
     const isValidPassword = await this.securityService.verifyPassword(
-      password,
+      logInDTO.password,
       user.password,
     );
 
@@ -29,10 +34,17 @@ export class LoginUserUseCase implements ILoginUserUseCase {
     }
 
     const token = await this.securityService.generateToken(
-      { id: user.id, role: user.role },
-      "12h",
+      { id: user.id },
+      "2h",
     );
 
-    return { user, token };
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+      token,
+    };
   }
 }

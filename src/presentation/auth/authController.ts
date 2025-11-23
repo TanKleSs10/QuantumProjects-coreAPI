@@ -9,6 +9,8 @@ import { ResetPasswordUseCase } from "@src/application/usecases/auth/ResetPasswo
 import { InvalidTokenError } from "@src/shared/errors/InvalidTokenError";
 import { ExpiredTokenError } from "@src/shared/errors/ExpiredTokenError";
 import { DomainError } from "@src/shared/errors/DomainError";
+import { LogInSchema } from "@src/domain/dtos/LogInDTO";
+import { LogInUserUseCase } from "@src/application/usecases/auth/LogInUserUseCase";
 
 const ResetPasswordSchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -57,7 +59,7 @@ export class AuthController {
     const parsed = ResetPasswordSchema.safeParse(req.body);
     if (!parsed.success) {
       this.logger.warn("Invalid reset password payload", {
-        issues: parsed.error.flatten(),
+        issues: parsed.error.message,
       });
       return res.status(400).json({
         success: false,
@@ -80,6 +82,26 @@ export class AuthController {
     } catch (error) {
       this.handleError(res, error);
     }
+  };
+
+  logInUser = (req: Request, res: Response) => {
+    const parsed = LogInSchema.safeParse(req.body);
+    if (!parsed.success) {
+      this.logger.warn("Invalid reset password payload", {
+        issues: parsed.error.message,
+      });
+    }
+    new LogInUserUseCase(this.userRepository, this.securityService)
+      .execute(parsed.data!)
+      .then(({ user, token }) => {
+        res.status(200).json({
+          success: true,
+          data: { user, token },
+        });
+      })
+      .catch((error) => {
+        this.handleError(res, error);
+      });
   };
 
   private handleError(res: Response, error: unknown) {

@@ -25,7 +25,7 @@ export class AuthRoutes {
 
     router.get("/verify-email/:token", controller.verifyEmail);
     router.post("/reset-password", controller.resetPassword);
-
+    router.post("/login", controller.logInUser);
     return router;
   }
 }

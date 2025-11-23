@@ -27,6 +27,12 @@ export interface UserProps {
   updatedAt?: Date;
 }
 
+export interface IUserLoginInfo {
+  id: string;
+  name: string;
+  email: string;
+}
+
 /**
  * Domain representation of an application user.
  */
@@ -87,8 +93,7 @@ export class User {
     if (!normalized.id) throw new Error("Missing or invalid 'id'");
     if (!normalized.name) throw new Error("Missing or invalid 'name'");
     if (!normalized.email) throw new Error("Missing or invalid 'email'");
-    if (!normalized.password)
-      throw new Error("Missing or invalid 'password'");
+    if (!normalized.password) throw new Error("Missing or invalid 'password'");
     if (!Object.values(UserRole).includes(normalized.role))
       throw new Error(`Invalid or missing 'role': ${normalized.role}`);
 
