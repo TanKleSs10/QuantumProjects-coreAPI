@@ -1,4 +1,3 @@
-import { UserRole } from "@src/domain/entities/User";
 import z from "zod";
 
 /**
@@ -8,7 +7,6 @@ export const CreateUserSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
   email: z.email("Email must be a valid email address"),
   password: z.string().min(8, "Password must contain at least 8 characters"),
-  role: z.enum(UserRole).default(UserRole.DEVELOPER),
   avatarUrl: z.url().optional(),
   bio: z.string().max(500).optional(),
   teamIds: z.array(z.string()).default([]),

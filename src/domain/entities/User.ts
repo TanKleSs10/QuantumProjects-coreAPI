@@ -1,14 +1,4 @@
 /**
- * Enumerates the roles supported by the application.
- */
-export enum UserRole {
-  ADMIN = "admin",
-  MANAGER = "manager",
-  DEVELOPER = "developer",
-  DESIGNER = "designer",
-}
-
-/**
  * Properties required to create a {@link User} domain entity.
  */
 export interface UserProps {
@@ -16,7 +6,6 @@ export interface UserProps {
   name: string;
   email: string;
   password: string;
-  role: UserRole;
   isVerified: boolean;
   avatarUrl?: string;
   bio?: string;
@@ -41,7 +30,6 @@ export class User {
   public name: string;
   public email: string;
   public password: string;
-  public role: UserRole;
   public isVerified: boolean = false;
   public avatarUrl?: string;
   public bio?: string;
@@ -56,7 +44,6 @@ export class User {
     this.name = props.name;
     this.email = props.email;
     this.password = props.password;
-    this.role = props.role;
     this.avatarUrl = props.avatarUrl;
     this.bio = props.bio;
     this.isVerified = props.isVerified;
@@ -78,7 +65,6 @@ export class User {
       name: obj.name,
       email: obj.email,
       password: obj.password ?? obj.passwordHash,
-      role: obj.role,
       avatarUrl: obj.avatarUrl,
       bio: obj.bio,
       isVerified: obj.isVerified ?? obj.isVerefied ?? false,
@@ -94,8 +80,6 @@ export class User {
     if (!normalized.name) throw new Error("Missing or invalid 'name'");
     if (!normalized.email) throw new Error("Missing or invalid 'email'");
     if (!normalized.password) throw new Error("Missing or invalid 'password'");
-    if (!Object.values(UserRole).includes(normalized.role))
-      throw new Error(`Invalid or missing 'role': ${normalized.role}`);
 
     return new User(normalized);
   }
