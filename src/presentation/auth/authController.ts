@@ -12,6 +12,7 @@ import { DomainError } from "@src/shared/errors/DomainError";
 import { LogInSchema } from "@src/domain/dtos/LogInDTO";
 import { LogInUserUseCase } from "@src/application/usecases/auth/LogInUserUseCase";
 import { envs } from "@src/config/envs";
+import { RefreshTokenUseCase } from "@src/application/usecases/auth/RefreshTokenUseCase";
 
 const ResetPasswordSchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -106,17 +107,49 @@ export class AuthController {
       .execute(parsed.data!)
       .then(({ user, accessToken, refreshToken }) => {
         res
-          .status(200)
-          .json({
-            success: true,
-            data: { user },
-            token: accessToken,
-          })
           .cookie("refresh_token", refreshToken, {
             httpOnly: true,
             secure: envs.ENVIRONMENT === "production",
             sameSite: "strict",
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          })
+          .status(200)
+          .json({
+            success: true,
+            data: { user },
+            token: accessToken,
+          });
+      })
+      .catch((error) => {
+        this.handleError(res, error);
+      });
+  };
+
+  refreshToken = (req: Request, res: Response) => {
+    const refreshToken = req.cookies?.refresh_token as string | undefined;
+
+    if (!refreshToken) {
+      this.logger.warn("Refresh token missing in request");
+      return res
+        .status(401)
+        .json({ success: false, message: "Refresh token is required" });
+    }
+
+    new RefreshTokenUseCase(this.userRepository, this.securityService)
+      .execute(refreshToken)
+      .then(({ user, accessToken, refreshToken: rotatedRefreshToken }) => {
+        res
+          .cookie("refresh_token", rotatedRefreshToken, {
+            httpOnly: true,
+            secure: envs.ENVIRONMENT === "production",
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          })
+          .status(200)
+          .json({
+            success: true,
+            data: { user },
+            token: accessToken,
           });
       })
       .catch((error) => {

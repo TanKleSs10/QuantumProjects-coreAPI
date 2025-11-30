@@ -1,26 +1,15 @@
 import { Router } from "express";
 import { UserController } from "./userController";
 import { logger } from "@src/infrastructure/logs";
-import { SecurityService } from "@src/infrastructure/services/SecurityService";
-import { ScryptSecurityAdapter } from "@src/infrastructure/adapters/ScryptSecurityAdapter";
-import { UserRepository } from "@src/infrastructure/repositories/UserRepository";
-import { UserDatasource } from "@src/infrastructure/datasources/UserDatasource";
-import { JWTAdapter } from "@src/infrastructure/adapters/JWTAdapter";
-import { NodemailerAdapter } from "@src/infrastructure/adapters/NodemailerAdapter";
-import { EmailService } from "@src/infrastructure/services/EmailService";
+import { securityService } from "@src/infrastructure/factories/securityServiceFactory";
+import { userRepository } from "@src/infrastructure/factories/userRepositoryFactory";
+import { emailService } from "@src/infrastructure/factories/emailServiceFactory";
 
 export class UserRoutes {
   static get routes() {
     const router = Router();
-    const securityAdapter = new ScryptSecurityAdapter();
-    const tokenAdapter = new JWTAdapter();
-    const securityService = new SecurityService(securityAdapter, tokenAdapter);
-    const mailAdapter = new NodemailerAdapter();
-    const emailService = new EmailService(mailAdapter);
-    const datasource = new UserDatasource();
-    const repository = new UserRepository(datasource);
     const controller = new UserController(
-      repository,
+      userRepository,
       securityService,
       emailService,
       logger.child("UserController"),
