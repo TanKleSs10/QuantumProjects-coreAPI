@@ -1,18 +1,12 @@
 import "express-serve-static-core";
 import { type Request, type Response, type NextFunction } from "express";
-import { SecurityService } from "@src/infrastructure/services/SecurityService";
-import { ScryptSecurityAdapter } from "@src/infrastructure/adapters/ScryptSecurityAdapter";
-import { JWTAdapter } from "@src/infrastructure/adapters/JWTAdapter";
+import { securityService } from "@src/infrastructure/factories/securityServiceFactory";
 
 declare module "express-serve-static-core" {
   interface Request {
     userId?: string;
   }
 }
-
-const secureAdapter = new ScryptSecurityAdapter();
-const tokenAdapter = new JWTAdapter();
-const securityService = new SecurityService(secureAdapter, tokenAdapter);
 
 export const authMiddleware = async (
   req: Request,
