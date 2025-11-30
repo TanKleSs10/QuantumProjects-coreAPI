@@ -1,8 +1,7 @@
 import "express-serve-static-core";
-import { type Request, type Response, type NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
 import { securityService } from "@src/infrastructure/factories/securityServiceFactory";
-import { ExpiredTokenError } from "@src/shared/errors/ExpiredTokenError";
-import { InvalidTokenError } from "@src/shared/errors/InvalidTokenError";
 
 declare module "express-serve-static-core" {
   interface Request {
@@ -17,28 +16,64 @@ export const authMiddleware = async (
 ) => {
   try {
     const header = req.headers.authorization;
-    if (!header) return res.status(401).json({ message: "Unauthorized" });
+
+    if (!header) {
+      return res.status(401).json({
+        success: false,
+        code: "MISSING_AUTH_HEADER",
+        message: "Missing Authorization header",
+      });
+    }
 
     const [type, token] = header.split(" ");
-    if (type !== "Bearer" || !token)
-      return res.status(401).json({ message: "Unauthorized" });
 
-    const payload = await securityService.verifyToken<{ id: string }>(token);
+    if (type !== "Bearer" || !token) {
+      return res.status(401).json({
+        success: false,
+        code: "INVALID_AUTH_FORMAT",
+        message: "Invalid Authorization format",
+      });
+    }
 
-    if (!payload || !payload.id)
-      return res.status(401).json({ message: "Unauthorized" });
+    let payload;
+
+    try {
+      // Intentamos verificar el token vía tu servicio
+      payload = await securityService.verifyToken<{ id: string }>(token);
+    } catch (err) {
+      // Si fue un error propio de expiración JWT
+      if (err instanceof jwt.TokenExpiredError) {
+        return res.status(401).json({
+          success: false,
+          code: "TOKEN_EXPIRED",
+          message: "Access token expired",
+        });
+      }
+
+      // Cualquier otro error → token inválido
+      return res.status(401).json({
+        success: false,
+        code: "INVALID_TOKEN",
+        message: "Invalid or malformed token",
+      });
+    }
+
+    if (!payload || !payload.id) {
+      return res.status(401).json({
+        success: false,
+        code: "INVALID_PAYLOAD",
+        message: "Token payload invalid",
+      });
+    }
 
     req.userId = payload.id;
 
-    next();
+    return next();
   } catch (error) {
-    if (error instanceof ExpiredTokenError) {
-      return res.status(410).json({ message: error.message });
-    }
-    if (error instanceof InvalidTokenError) {
-      return res.status(401).json({ message: error.message });
-    }
-
-    res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({
+      success: false,
+      code: "UNAUTHORIZED",
+      message: "Unauthorized",
+    });
   }
 };

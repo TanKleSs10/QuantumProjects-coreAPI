@@ -1,62 +1,50 @@
-import { IUserLoginInfo } from "@src/domain/entities/User";
-import { IUserRepository } from "@src/domain/repositories/IUserRepository";
 import { ISecurityService } from "@src/domain/services/ISecurityService";
-import { DomainError } from "@src/shared/errors/DomainError";
+import { ApplicationError } from "@src/shared/errors/ApplicationError";
 
-interface RefreshPayload {
-  id: string;
+interface IRefreshTokenUseCase {
+  execute(refreshToken: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+  }>;
 }
 
-export class RefreshTokenUseCase {
-  constructor(
-    private readonly userRepository: IUserRepository,
-    private readonly securityService: ISecurityService,
-  ) {}
+export class RefreshTokenUseCase implements IRefreshTokenUseCase {
+  constructor(private readonly securityService: ISecurityService) {}
 
   async execute(refreshToken: string): Promise<{
-    user: IUserLoginInfo;
     accessToken: string;
     refreshToken: string;
   }> {
     if (!refreshToken) {
-      throw new DomainError("Refresh token is required");
+      throw new ApplicationError("Refresh token is required");
     }
 
-    const payload = await this.securityService.verifyToken<RefreshPayload>(
+    // 1. Verificar refresh token
+    const payload = await this.securityService.verifyToken<{ id: string }>(
       refreshToken,
     );
 
-    if (!payload?.id) {
-      throw new DomainError("Invalid refresh token payload");
+    if (!payload || !payload.id) {
+      throw new ApplicationError("Invalid refresh token");
     }
 
-    const user = await this.userRepository.getUserById(payload.id);
-    if (!user) {
-      throw new DomainError("User not found");
-    }
+    const userId = payload.id; // 🔥 viene del token, no del cliente
 
-    if (!user.isVerified) {
-      throw new DomainError("Email is not verified");
-    }
-
-    const accessToken = await this.securityService.generateToken(
-      { id: user.id },
+    // 2. Generar access token nuevo
+    const newAccessToken = await this.securityService.generateToken(
+      { id: userId },
       "15m",
     );
 
-    const rotatedRefreshToken = await this.securityService.generateToken(
-      { id: user.id },
+    // 3. Generar refresh token nuevo (rotación segura)
+    const newRefreshToken = await this.securityService.generateToken(
+      { id: userId },
       "7d",
     );
 
     return {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
-      accessToken,
-      refreshToken: rotatedRefreshToken,
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
     };
   }
 }

@@ -157,6 +157,41 @@ export class AuthController {
       });
   };
 
+  refreshToken = (req: Request, res: Response) => {
+    const refresh_token = req.cookies?.refresh_token;
+
+    if (!refresh_token) {
+      return res.status(401).json({
+        success: false,
+        code: "NO_REFRESH_TOKEN",
+        message: "No refresh token provided",
+      });
+    }
+
+    new RefreshTokenUseCase(this.securityService)
+      .execute(refresh_token)
+      .then(
+        ({ accessToken: newAccessToken, refreshToken: newRefreshToken }) => {
+          res
+            .cookie("refresh_token", newRefreshToken, {
+              httpOnly: true,
+              secure: envs.ENVIRONMENT === "production",
+              sameSite: "strict",
+              maxAge: 7 * 24 * 60 * 60 * 1000,
+            })
+            .status(200)
+            .json({
+              success: true,
+              accessToken: newAccessToken,
+              message: "Token refreshed successfully",
+            });
+        },
+      )
+      .catch((error) => {
+        return this.handleError(res, error);
+      });
+  };
+
   private handleError(res: Response, error: unknown) {
     if (error instanceof ExpiredTokenError) {
       return res.status(410).json({ success: false, message: error.message });
