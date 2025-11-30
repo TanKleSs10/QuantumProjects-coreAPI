@@ -9,7 +9,11 @@ interface ResetPayload {
   id: string;
 }
 
-export class ResetPasswordUseCase {
+interface IResetPasswordUseCase {
+  execute(token: string, newPassword: string): Promise<User>;
+}
+
+export class ResetPasswordUseCase implements IResetPasswordUseCase {
   constructor(
     private readonly securityService: ISecurityService,
     private readonly userRepository: IUserRepository,
@@ -31,7 +35,9 @@ export class ResetPasswordUseCase {
 
     const user = await this.userRepository.getUserById(payload.id);
     if (!user) {
-      this.logger?.warn("User not found during password reset", { userId: payload.id });
+      this.logger?.warn("User not found during password reset", {
+        userId: payload.id,
+      });
       throw new DomainError("User not found");
     }
 
@@ -44,7 +50,9 @@ export class ResetPasswordUseCase {
       throw new DomainError("User not found");
     }
 
-    this.logger?.info("User password reset successfully", { userId: updatedUser.id });
+    this.logger?.info("User password reset successfully", {
+      userId: updatedUser.id,
+    });
     return updatedUser;
   }
 }

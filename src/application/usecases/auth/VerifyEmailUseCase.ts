@@ -5,24 +5,33 @@ import { ILogger } from "@src/interfaces/Logger";
 import { DomainError } from "@src/shared/errors/DomainError";
 import { InvalidTokenError } from "@src/shared/errors/InvalidTokenError";
 
-interface VerificationPayload {
+type VerificationPayload = {
   id: string;
+};
+
+interface IVerifyEmailUseCase {
+  execute(token: string): Promise<User>;
 }
 
-export class VerifyEmailUseCase {
+export class VerifyEmailUseCase implements IVerifyEmailUseCase {
   constructor(
     private readonly securityService: ISecurityService,
     private readonly userRepository: IUserRepository,
     private readonly logger?: ILogger,
-  ) {}
+  ) {
+    this.logger = logger?.child("VerifyEmailUseCase");
+  }
 
   async execute(token: string): Promise<User> {
     if (!token) {
+      this.logger?.warn("Verification token not provided");
       throw new DomainError("Verification token is required");
     }
 
-    const payload = await this.securityService.verifyToken<VerificationPayload>(token);
+    const payload =
+      await this.securityService.verifyToken<VerificationPayload>(token);
     if (!payload) {
+      this.logger?.warn("Invalid verification token");
       throw new InvalidTokenError();
     }
 
@@ -44,7 +53,9 @@ export class VerifyEmailUseCase {
       throw new DomainError("User not found");
     }
 
-    this.logger?.info("User verified successfully", { userId: verifiedUser.id });
+    this.logger?.info("User verified successfully", {
+      userId: verifiedUser.id,
+    });
     return verifiedUser;
   }
 }

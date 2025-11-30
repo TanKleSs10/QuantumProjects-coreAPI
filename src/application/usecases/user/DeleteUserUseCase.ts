@@ -13,11 +13,18 @@ export class DeleteUserUseCase implements IDeleteUserUseCase {
   ) {}
 
   async execute(id: string): Promise<boolean> {
-    const deleted = await this.userRepository.deleteUser(id);
-    if (!deleted) {
-      this.logger.warn(`Attempted to delete non-existent user with id: ${id}`);
-      throw new DomainError("User not found");
+    try {
+      const deleted = await this.userRepository.deleteUser(id);
+      if (!deleted) {
+        this.logger.warn(
+          `Attempted to delete non-existent user with id: ${id}`,
+        );
+        throw new DomainError("User not found");
+      }
+      return true;
+    } catch (error) {
+      this.logger.error(`Error deleting user with id: ${id}`, { error });
+      throw new DomainError("Could not delete user");
     }
-    return true;
   }
 }

@@ -123,7 +123,9 @@ export class UserDatasource implements IUserDatasource {
       if (error instanceof InfrastructureError) {
         throw error;
       }
-      throw new InfrastructureError("Error updating password", { cause: error });
+      throw new InfrastructureError("Error updating password", {
+        cause: error,
+      });
     }
   }
 

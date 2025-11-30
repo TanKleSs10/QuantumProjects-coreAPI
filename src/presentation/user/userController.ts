@@ -9,8 +9,8 @@ import { GetUserByIdUseCase } from "@src/application/usecases/user/GetUserByIdUs
 import { GetUserByEmailUseCase } from "@src/application/usecases/user/GetUserByEmailUseCase";
 import { CreateUserUseCase } from "@src/application/usecases/user/CreateUserUseCase";
 import { UpdateUserSchema } from "@src/domain/dtos/UpdateUserDTO";
-import { UpdateUserUseCase } from "@src/application/usecases/user/UpdateUserUseCase";
 import { DeleteUserUseCase } from "@src/application/usecases/user/DeleteUserUseCase";
+import { UpdateUserUseCase } from "@src/application/usecases/user/UpdateUserUseCase";
 
 export class UserController {
   constructor(

@@ -57,7 +57,7 @@ export class AuthController {
     }
   };
 
-  resetPassword = async (req: Request, res: Response) => {
+  resetPassword = (req: Request, res: Response) => {
     const parsed = ResetPasswordSchema.safeParse(req.body);
     if (!parsed.success) {
       this.logger.warn("Invalid reset password payload", {
@@ -69,21 +69,21 @@ export class AuthController {
       });
     }
 
-    const useCase = new ResetPasswordUseCase(
+    new ResetPasswordUseCase(
       this.securityService,
       this.userRepository,
-      this.logger.child("ResetPasswordUseCase"),
-    );
-
-    try {
-      await useCase.execute(parsed.data.token, parsed.data.password);
-      res.status(200).json({
-        success: true,
-        message: "Password updated successfully",
+      this.logger,
+    )
+      .execute(parsed.data.token, parsed.data.password)
+      .then(() => {
+        res.status(200).json({
+          success: true,
+          message: "Password updated successfully",
+        });
+      })
+      .catch((error) => {
+        this.handleError(res, error);
       });
-    } catch (error) {
-      this.handleError(res, error);
-    }
   };
 
   logInUser = (req: Request, res: Response) => {
@@ -99,11 +99,10 @@ export class AuthController {
         message: parsed.error.issues[0]?.message ?? "Invalid payload",
         errors: parsed.error.issues,
       });
-
       return;
     }
 
-    new LogInUserUseCase(this.userRepository, this.securityService)
+    new LogInUserUseCase(this.userRepository, this.securityService, this.logger)
       .execute(parsed.data!)
       .then(({ user, accessToken, refreshToken }) => {
         res
@@ -135,9 +134,9 @@ export class AuthController {
         .json({ success: false, message: "Refresh token is required" });
     }
 
-    new RefreshTokenUseCase(this.userRepository, this.securityService)
+    new RefreshTokenUseCase(this.securityService, this.logger)
       .execute(refreshToken)
-      .then(({ user, accessToken, refreshToken: rotatedRefreshToken }) => {
+      .then(({ accessToken, refreshToken: rotatedRefreshToken }) => {
         res
           .cookie("refresh_token", rotatedRefreshToken, {
             httpOnly: true,
@@ -148,7 +147,6 @@ export class AuthController {
           .status(200)
           .json({
             success: true,
-            data: { user },
             token: accessToken,
           });
       })
@@ -157,38 +155,17 @@ export class AuthController {
       });
   };
 
-  refreshToken = (req: Request, res: Response) => {
-    const refresh_token = req.cookies?.refresh_token;
-
-    if (!refresh_token) {
-      return res.status(401).json({
-        success: false,
-        code: "NO_REFRESH_TOKEN",
-        message: "No refresh token provided",
-      });
-    }
-
-    new RefreshTokenUseCase(this.securityService)
-      .execute(refresh_token)
-      .then(
-        ({ accessToken: newAccessToken, refreshToken: newRefreshToken }) => {
-          res
-            .cookie("refresh_token", newRefreshToken, {
-              httpOnly: true,
-              secure: envs.ENVIRONMENT === "production",
-              sameSite: "strict",
-              maxAge: 7 * 24 * 60 * 60 * 1000,
-            })
-            .status(200)
-            .json({
-              success: true,
-              accessToken: newAccessToken,
-              message: "Token refreshed successfully",
-            });
-        },
-      )
-      .catch((error) => {
-        return this.handleError(res, error);
+  logOutUser = (_req: Request, res: Response) => {
+    res
+      .clearCookie("refresh_token", {
+        httpOnly: true,
+        secure: envs.ENVIRONMENT === "production",
+        sameSite: "strict",
+      })
+      .status(200)
+      .json({
+        success: true,
+        message: "Logged out successfully",
       });
   };
 

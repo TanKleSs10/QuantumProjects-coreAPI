@@ -39,7 +39,7 @@ export class UserRepository implements IUserRepository {
     }
   }
 
-  async getUserByEmail(email: string): Promise<User | null> {
+  async getUserByEmail(email: string): Promise<User> {
     try {
       return await this.userDatasource.getUserByEmail(email);
     } catch (error) {
@@ -47,7 +47,7 @@ export class UserRepository implements IUserRepository {
         error instanceof InfrastructureError &&
         error.message === "User not found"
       ) {
-        return null;
+        throw new InfrastructureError("User not found");
       }
       throw new RepositoryError("Error in UserRepository getUserByEmail", {
         cause: error,
@@ -106,7 +106,10 @@ export class UserRepository implements IUserRepository {
     }
   }
 
-  async updatePassword(userId: string, passwordHash: string): Promise<User | null> {
+  async updatePassword(
+    userId: string,
+    passwordHash: string,
+  ): Promise<User | null> {
     try {
       return await this.userDatasource.updatePassword(userId, passwordHash);
     } catch (error) {

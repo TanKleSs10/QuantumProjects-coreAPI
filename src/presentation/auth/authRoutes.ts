@@ -19,6 +19,7 @@ export class AuthRoutes {
     router.post("/reset-password", controller.resetPassword);
     router.post("/login", controller.logInUser);
     router.post("/refresh", controller.refreshToken);
+    router.post("/logout", controller.logOutUser);
     return router;
   }
 }
