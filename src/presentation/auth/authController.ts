@@ -12,6 +12,7 @@ import { DomainError } from "@src/shared/errors/DomainError";
 import { LogInSchema } from "@src/domain/dtos/LogInDTO";
 import { LogInUserUseCase } from "@src/application/usecases/auth/LogInUserUseCase";
 import { envs } from "@src/config/envs";
+import { RefreshTokenUseCase } from "@src/application/usecases/auth/RefreshTokenUseCase";
 
 const ResetPasswordSchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -121,6 +122,41 @@ export class AuthController {
       })
       .catch((error) => {
         this.handleError(res, error);
+      });
+  };
+
+  refreshToken = (req: Request, res: Response) => {
+    const refresh_token = req.cookies?.refresh_token;
+
+    if (!refresh_token) {
+      return res.status(401).json({
+        success: false,
+        code: "NO_REFRESH_TOKEN",
+        message: "No refresh token provided",
+      });
+    }
+
+    new RefreshTokenUseCase(this.securityService)
+      .execute(refresh_token)
+      .then(
+        ({ accessToken: newAccessToken, refreshToken: newRefreshToken }) => {
+          res
+            .cookie("refresh_token", newRefreshToken, {
+              httpOnly: true,
+              secure: envs.ENVIRONMENT === "production",
+              sameSite: "strict",
+              maxAge: 7 * 24 * 60 * 60 * 1000,
+            })
+            .status(200)
+            .json({
+              success: true,
+              accessToken: newAccessToken,
+              message: "Token refreshed successfully",
+            });
+        },
+      )
+      .catch((error) => {
+        return this.handleError(res, error);
       });
   };
 
