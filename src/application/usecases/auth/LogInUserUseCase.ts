@@ -1,13 +1,15 @@
 import { TLogInDTO } from "@src/domain/dtos/LogInDTO";
-import { IUserLoginInfo, User } from "@src/domain/entities/User";
+import { IUserLoginInfo } from "@src/domain/entities/User";
 import { IUserRepository } from "@src/domain/repositories/IUserRepository";
 import { ISecurityService } from "@src/domain/services/ISecurityService";
 import { DomainError } from "@src/shared/errors/DomainError";
 
 export interface ILogInUserUseCase {
-  execute(
-    logInDTO: TLogInDTO,
-  ): Promise<{ user: IUserLoginInfo; token: string }>;
+  execute(logInDTO: TLogInDTO): Promise<{
+    user: IUserLoginInfo;
+    accessToken: string;
+    refreshToken: string;
+  }>;
 }
 
 export class LogInUserUseCase implements ILogInUserUseCase {
@@ -16,26 +18,30 @@ export class LogInUserUseCase implements ILogInUserUseCase {
     private readonly securityService: ISecurityService,
   ) {}
 
-  async execute(
-    logInDTO: TLogInDTO,
-  ): Promise<{ user: IUserLoginInfo; token: string }> {
+  async execute(logInDTO: TLogInDTO): Promise<{
+    user: IUserLoginInfo;
+    accessToken: string;
+    refreshToken: string;
+  }> {
     const user = await this.userRepository.getUserByEmail(logInDTO.email);
-    if (!user) {
-      throw new DomainError("Invalid credentials");
-    }
+    if (!user) throw new DomainError("Invalid credentials");
 
     const isValidPassword = await this.securityService.verifyPassword(
       logInDTO.password,
       user.password,
     );
 
-    if (!isValidPassword) {
-      throw new DomainError("Invalid credentials");
-    }
+    if (!isValidPassword) throw new DomainError("Invalid credentials");
+    if (!user.isVerified) throw new DomainError("Email is not verified");
 
-    const token = await this.securityService.generateToken(
+    const accessToken = await this.securityService.generateToken(
       { id: user.id },
-      "2h",
+      "15m",
+    );
+
+    const refreshToken = await this.securityService.generateToken(
+      { id: user.id },
+      "7d",
     );
 
     return {
@@ -44,7 +50,8 @@ export class LogInUserUseCase implements ILogInUserUseCase {
         name: user.name,
         email: user.email,
       },
-      token,
+      accessToken,
+      refreshToken,
     };
   }
 }

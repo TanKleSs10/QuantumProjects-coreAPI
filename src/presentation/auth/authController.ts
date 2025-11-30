@@ -11,6 +11,7 @@ import { ExpiredTokenError } from "@src/shared/errors/ExpiredTokenError";
 import { DomainError } from "@src/shared/errors/DomainError";
 import { LogInSchema } from "@src/domain/dtos/LogInDTO";
 import { LogInUserUseCase } from "@src/application/usecases/auth/LogInUserUseCase";
+import { envs } from "@src/config/envs";
 
 const ResetPasswordSchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -86,18 +87,37 @@ export class AuthController {
 
   logInUser = (req: Request, res: Response) => {
     const parsed = LogInSchema.safeParse(req.body);
+
     if (!parsed.success) {
-      this.logger.warn("Invalid reset password payload", {
+      this.logger.warn("invalid login payload", {
         issues: parsed.error.message,
       });
+
+      res.status(400).json({
+        success: false,
+        message: parsed.error.issues[0]?.message ?? "Invalid payload",
+        errors: parsed.error.issues,
+      });
+
+      return;
     }
+
     new LogInUserUseCase(this.userRepository, this.securityService)
       .execute(parsed.data!)
-      .then(({ user, token }) => {
-        res.status(200).json({
-          success: true,
-          data: { user, token },
-        });
+      .then(({ user, accessToken, refreshToken }) => {
+        res
+          .status(200)
+          .json({
+            success: true,
+            data: { user },
+            token: accessToken,
+          })
+          .cookie("refresh_token", refreshToken, {
+            httpOnly: true,
+            secure: envs.ENVIRONMENT === "production",
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          });
       })
       .catch((error) => {
         this.handleError(res, error);
