@@ -24,7 +24,9 @@ export class UserController {
     const userData = CreateUserSchema.safeParse(req.body);
     if (!userData.success) {
       this.logger.error("Invalid user data");
-      res.status(400).json({ success: false, message: "Invalid user data" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid user data" });
     }
     new CreateUserUseCase(
       this.userRepository,
@@ -59,7 +61,9 @@ export class UserController {
     const email = req.params.email;
     if (!email) {
       this.logger.error("Email is required");
-      res.status(400).json({ success: false, message: "Email is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email is required" });
     }
 
     new GetUserByEmailUseCase(this.userRepository, this.logger)
@@ -88,13 +92,17 @@ export class UserController {
     const userId = req.params.id;
     if (!userId) {
       this.logger.error("User ID is required");
-      res.status(400).json({ success: false, message: "User ID is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "User ID is required" });
     }
     const updateData = UpdateUserSchema.safeParse(req.body);
 
     if (!updateData.success) {
       this.logger.error("Invalid update data");
-      res.status(400).json({ success: false, message: "Invalid update data" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid update data" });
     }
 
     new UpdateUserUseCase(this.userRepository, this.securityService)
@@ -110,7 +118,9 @@ export class UserController {
   deleteUser = (req: Request, res: Response) => {
     const userId = req.params.id;
     if (!userId) {
-      res.status(400).json({ success: false, message: "User ID is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "User ID is required" });
     }
     new DeleteUserUseCase(this.userRepository, this.logger)
       .execute(userId)
