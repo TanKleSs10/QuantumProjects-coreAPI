@@ -72,6 +72,7 @@ export class LogInUserUseCase implements ILogInUserUseCase {
       };
     } catch (error) {
       this.logger?.error("Error during user login", { error, logInDTO });
+      if (error instanceof DomainError) throw error;
       throw new ApplicationError("Error during login process");
     }
   }

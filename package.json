@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "test": "jest",
     "dev": "nodemon",
     "build": "rimraf ./dist && tsc",
     "start": "npm run build && node dist/app.js"
@@ -14,11 +15,16 @@
   "type": "commonjs",
   "devDependencies": {
     "@types/express": "^5.0.4",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "24.9.1",
     "@types/nodemailer": "^7.0.3",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.2.0",
     "nodemon": "3.1.10",
     "rimraf": "6.0.1",
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.6",
     "ts-node": "10.9.2",
     "tsconfig-paths": "4.2.0",
     "typescript": "5.9.3"
