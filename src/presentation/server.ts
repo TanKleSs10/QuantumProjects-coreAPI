@@ -9,7 +9,7 @@ interface ServerConfig {
 }
 
 export class Server {
-  private readonly app: Application;
+  public readonly app: Application;
   private readonly httpServer: http.Server;
   private readonly port: number;
   private readonly routes: Router;
@@ -21,14 +21,13 @@ export class Server {
     this.httpServer = http.createServer(this.app);
     this.routes = config.routes;
     this.logger = config.Logger;
-  }
 
-  public start(): void {
-    // Routes
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(this.routes);
+  }
 
+  public start(): void {
     this.httpServer.listen(this.port, () => {
       this.logger.info(`Server is running on port ${this.port}`);
     });
