@@ -63,7 +63,10 @@ describe("LogInUserUseCase", () => {
   });
 
   it("email no verificado", async () => {
-    mockRepository.getUserByEmail.mockResolvedValueOnce({ ...validUser, isVerified: false });
+    mockRepository.getUserByEmail.mockResolvedValueOnce({
+      ...validUser,
+      isVerified: false,
+    });
     mockSecurityService.verifyPassword.mockResolvedValueOnce(true);
 
     await expect(useCase.execute(logInDTO)).rejects.toThrow(DomainError);
@@ -92,7 +95,9 @@ describe("LogInUserUseCase", () => {
   });
 
   it("error inesperado en el repositorio", async () => {
-    mockRepository.getUserByEmail.mockRejectedValueOnce(new Error("repo failure"));
+    mockRepository.getUserByEmail.mockRejectedValueOnce(
+      new Error("repo failure"),
+    );
 
     await expect(useCase.execute(logInDTO)).rejects.toThrow(ApplicationError);
     expect(mockChildLogger.error).toHaveBeenCalled();
@@ -100,7 +105,9 @@ describe("LogInUserUseCase", () => {
 
   it("error inesperado en verifyPassword", async () => {
     mockRepository.getUserByEmail.mockResolvedValueOnce(validUser);
-    mockSecurityService.verifyPassword.mockRejectedValueOnce(new Error("hash error"));
+    mockSecurityService.verifyPassword.mockRejectedValueOnce(
+      new Error("hash error"),
+    );
 
     await expect(useCase.execute(logInDTO)).rejects.toThrow(ApplicationError);
     expect(mockChildLogger.error).toHaveBeenCalled();
@@ -109,7 +116,9 @@ describe("LogInUserUseCase", () => {
   it("error inesperado en generateToken", async () => {
     mockRepository.getUserByEmail.mockResolvedValueOnce(validUser);
     mockSecurityService.verifyPassword.mockResolvedValueOnce(true);
-    mockSecurityService.generateToken.mockRejectedValueOnce(new Error("jwt failure"));
+    mockSecurityService.generateToken.mockRejectedValueOnce(
+      new Error("jwt failure"),
+    );
 
     await expect(useCase.execute(logInDTO)).rejects.toThrow(ApplicationError);
     expect(mockChildLogger.error).toHaveBeenCalled();
