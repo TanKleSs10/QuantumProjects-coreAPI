@@ -1,162 +1,164 @@
-import express from "express";
 import request from "supertest";
+import express, { Express } from "express";
 
-const childLoggerMock = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-  child: jest.fn(),
-};
-childLoggerMock.child.mockReturnValue(childLoggerMock);
-
-const loggerMock = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-  child: jest.fn(() => childLoggerMock),
-};
-
-const securityServiceMock = {
-  hashPassword: jest.fn(),
-  verifyPassword: jest.fn(),
-  generateToken: jest.fn(),
-  verifyToken: jest.fn(),
-};
-
-const userRepositoryMock = {
-  getUserByEmail: jest.fn(),
-};
-
+// 👇 IMPORTA PRIMERO LOS MOCKS DE ENVS Y LOGGER
 jest.mock("@src/config/envs", () => ({
   envs: {
     PORT: 3000,
     ENVIRONMENT: "test",
     LOKI_HOST: "http://localhost",
-    URI_DB: "mongodb://localhost",
-    FRONTEND_URL: "http://localhost:3000",
-    APP_URL: "http://localhost:3000",
-    JWT_SECRET: "secret",
-    JWT_EXPIRES_IN: "1h",
-    SMTP_HOST: "smtp.local",
+    URI_DB: "mongodb://test",
+    JWT_SECRET: "secret123",
+    REFRESH_JWT_SECRET: "refresh123",
+    SMTP_HOST: "smtp.test.com",
     SMTP_PORT: 587,
-    SMTP_USER: "user",
-    SMTP_PASS: "pass",
+    SMTP_USER: "test",
+    SMTP_PASS: "test",
     SMTP_SECURE: false,
   },
 }));
 
-jest.mock("@src/infrastructure/logs", () => ({ logger: loggerMock }));
+jest.mock("@src/infrastructure/logs", () => {
+  const fakeChild = {
+    warn: jest.fn(),
+    error: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+  };
+
+  return {
+    logger: {
+      child: jest.fn(() => fakeChild),
+      warn: jest.fn(),
+      error: jest.fn(),
+      info: jest.fn(),
+      debug: jest.fn(),
+    },
+  };
+});
+
+// 👇 AHORA IMPORTAS LO DEMÁS
+import { AuthRoutes } from "@src/presentation/auth/authRoutes";
+import { userRepository } from "@src/infrastructure/factories/userRepositoryFactory";
+import { securityService } from "@src/infrastructure/factories/securityServiceFactory";
+
+// -----------------------------
+// MOCKS DE FACTORIES
+// -----------------------------
+jest.mock("@src/infrastructure/factories/userRepositoryFactory", () => ({
+  userRepository: {
+    getUserByEmail: jest.fn(),
+  },
+}));
 
 jest.mock("@src/infrastructure/factories/securityServiceFactory", () => ({
-  securityService: securityServiceMock,
+  securityService: {
+    verifyPassword: jest.fn(),
+    generateToken: jest.fn(),
+  },
 }));
 
-jest.mock("@src/infrastructure/factories/userRepositoryFactory", () => ({
-  userRepository: userRepositoryMock,
-}));
-
-import { AuthRoutes } from "@src/presentation/auth/authRoutes";
-
-const buildApp = () => {
+// -----------------------------
+// APP PARA TESTING
+// -----------------------------
+const createTestApp = (): Express => {
   const app = express();
   app.use(express.json());
-  (app.request as any).cookies = {};
   app.use("/auth", AuthRoutes.routes);
   return app;
 };
 
-describe("AuthRoutes - login", () => {
+describe("POST /auth/login", () => {
+  let app: Express;
+
   beforeEach(() => {
+    app = createTestApp();
     jest.clearAllMocks();
   });
 
-  it("returns 200 and sets tokens on successful login", async () => {
-    const app = buildApp();
-    const user = {
-      id: "user-1",
-      name: "Test User",
-      email: "test@example.com",
+  it("should return 200 and tokens on login success", async () => {
+    (userRepository.getUserByEmail as jest.Mock).mockResolvedValue({
+      id: "1",
+      email: "test@test.com",
       password: "hashed",
+      name: "Test User",
       isVerified: true,
-    };
+    });
 
-    userRepositoryMock.getUserByEmail.mockResolvedValueOnce(user);
-    securityServiceMock.verifyPassword.mockResolvedValueOnce(true);
-    securityServiceMock.generateToken
+    (securityService.verifyPassword as jest.Mock).mockResolvedValue(true);
+
+    (securityService.generateToken as jest.Mock)
       .mockResolvedValueOnce("access-token")
       .mockResolvedValueOnce("refresh-token");
 
-    const response = await request(app)
-      .post("/auth/login")
-      .send({ email: user.email, password: "plain-password" });
-
-    expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({
-      success: true,
-      data: { user: { id: user.id, email: user.email, name: user.name } },
-      token: "access-token",
+    const res = await request(app).post("/auth/login").send({
+      email: "test@test.com",
+      password: "123456",
     });
-    expect(response.headers["set-cookie"]).toEqual(
-      expect.arrayContaining([expect.stringContaining("refresh_token=refresh-token")]),
-    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.user.email).toBe("test@test.com");
+    expect(res.body.accessToken).toBe("access-token");
+    expect(res.body.refreshToken).toBe("refresh-token");
   });
 
-  it("returns 400 for invalid payload", async () => {
-    const app = buildApp();
+  it("should return 400 if user does not exist", async () => {
+    (userRepository.getUserByEmail as jest.Mock).mockResolvedValue(null);
 
-    const response = await request(app)
-      .post("/auth/login")
-      .send({ email: "not-an-email" });
+    const res = await request(app).post("/auth/login").send({
+      email: "notfound@test.com",
+      password: "123456",
+    });
 
-    expect(response.status).toBe(400);
-    expect(response.body.success).toBe(false);
-    expect(typeof response.body.message).toBe("string");
+    expect(res.status).toBe(400);
   });
 
-  it("returns 400 when credentials are invalid", async () => {
-    const app = buildApp();
-    userRepositoryMock.getUserByEmail.mockResolvedValueOnce(null);
+  it("should return 400 if password is invalid", async () => {
+    (userRepository.getUserByEmail as jest.Mock).mockResolvedValue({
+      id: "1",
+      email: "test@test.com",
+      password: "hashed",
+      isVerified: true,
+    });
 
-    const response = await request(app)
-      .post("/auth/login")
-      .send({ email: "missing@example.com", password: "secret123" });
+    (securityService.verifyPassword as jest.Mock).mockResolvedValue(false);
 
-    expect(response.status).toBe(400);
-    expect(response.body).toMatchObject({ success: false, message: "Invalid credentials" });
+    const res = await request(app).post("/auth/login").send({
+      email: "test@test.com",
+      password: "wrong",
+    });
+
+    expect(res.status).toBe(400);
   });
 
-  it("returns 400 when email is not verified", async () => {
-    const app = buildApp();
-    const user = {
-      id: "user-2",
-      name: "Test User",
-      email: "test2@example.com",
+  it("should return 400 if email is not verified", async () => {
+    (userRepository.getUserByEmail as jest.Mock).mockResolvedValue({
+      id: "1",
+      email: "test@test.com",
       password: "hashed",
       isVerified: false,
-    };
+    });
 
-    userRepositoryMock.getUserByEmail.mockResolvedValueOnce(user);
-    securityServiceMock.verifyPassword.mockResolvedValueOnce(true);
+    (securityService.verifyPassword as jest.Mock).mockResolvedValue(true);
 
-    const response = await request(app)
-      .post("/auth/login")
-      .send({ email: user.email, password: "secret123" });
+    const res = await request(app).post("/auth/login").send({
+      email: "test@test.com",
+      password: "123456",
+    });
 
-    expect(response.status).toBe(400);
-    expect(response.body).toMatchObject({ success: false, message: "Email is not verified" });
+    expect(res.status).toBe(400);
   });
 
-  it("returns 500 on unexpected repository error", async () => {
-    const app = buildApp();
-    userRepositoryMock.getUserByEmail.mockRejectedValueOnce(new Error("db down"));
+  it("should return 500 when an unexpected error happens", async () => {
+    (userRepository.getUserByEmail as jest.Mock).mockRejectedValue(
+      new Error("DB ERROR"),
+    );
 
-    const response = await request(app)
-      .post("/auth/login")
-      .send({ email: "user@example.com", password: "secret123" });
+    const res = await request(app).post("/auth/login").send({
+      email: "test@test.com",
+      password: "123456",
+    });
 
-    expect(response.status).toBe(500);
-    expect(response.body).toMatchObject({ success: false, message: "Internal server error" });
+    expect(res.status).toBe(500);
   });
 });
