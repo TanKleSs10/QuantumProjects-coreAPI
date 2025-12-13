@@ -14,20 +14,20 @@ export class UpdateUserUseCase implements IUpdateUserUseCase {
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly securityService: ISecurityService,
-    private readonly logger?: ILogger,
+    private readonly logger: ILogger,
   ) {
-    this.logger = logger?.child("UpdateUserUseCase");
+    this.logger = logger.child("UpdateUserUseCase");
   }
 
   async execute(id: string, data: Partial<CreateUserDTO>): Promise<User> {
     try {
-      this.logger?.debug("Updating user", { userId: id, data });
+      this.logger.debug("Updating user", { userId: id, data });
 
       const updatePayload: Partial<CreateUserDTO> = { ...data };
 
       // 🔐 Si viene contraseña → hashear antes de guardar
       if (data.password) {
-        this.logger?.debug("Hashing new password for user", { userId: id });
+        this.logger.debug("Hashing new password for user", { userId: id });
 
         const hashedPassword = await this.securityService.hashPassword(
           data.password,
@@ -43,17 +43,17 @@ export class UpdateUserUseCase implements IUpdateUserUseCase {
       );
 
       if (!updatedUser) {
-        this.logger?.warn("User not found for update", { userId: id });
+        this.logger.warn("User not found for update", { userId: id });
         throw new DomainError("User not found");
       }
 
-      this.logger?.info("User updated successfully", { userId: id });
+      this.logger.info("User updated successfully", { userId: id });
       return updatedUser;
     } catch (error: any) {
       // Mantener DomainError
       if (error instanceof DomainError) throw error;
 
-      this.logger?.error("Failed to update user", {
+      this.logger.error("Failed to update user", {
         userId: id,
         error: error instanceof Error ? error.message : String(error),
       });

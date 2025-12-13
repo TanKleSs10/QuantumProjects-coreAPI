@@ -18,9 +18,9 @@ export class LogInUserUseCase implements ILogInUserUseCase {
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly securityService: ISecurityService,
-    private readonly logger?: ILogger,
+    private readonly logger: ILogger,
   ) {
-    this.logger = logger?.child("LogInUserUseCase");
+    this.logger = logger.child("LogInUserUseCase");
   }
 
   async execute(logInDTO: TLogInDTO): Promise<{
@@ -32,7 +32,7 @@ export class LogInUserUseCase implements ILogInUserUseCase {
       const user = await this.userRepository.getUserByEmail(logInDTO.email);
 
       if (!user) {
-        this.logger?.warn("Login attempt with invalid email", { logInDTO });
+        this.logger.warn("Login attempt with invalid email", { logInDTO });
         throw new DomainError("Invalid credentials");
       }
 
@@ -42,12 +42,12 @@ export class LogInUserUseCase implements ILogInUserUseCase {
       );
 
       if (!isValidPassword) {
-        this.logger?.warn("Login attempt with invalid password", { logInDTO });
+        this.logger.warn("Login attempt with invalid password", { logInDTO });
         throw new DomainError("Invalid credentials");
       }
 
       if (!user.isVerified) {
-        this.logger?.warn("Login attempt with unverified email", { logInDTO });
+        this.logger.warn("Login attempt with unverified email", { logInDTO });
         throw new DomainError("Email is not verified");
       }
 
@@ -71,7 +71,7 @@ export class LogInUserUseCase implements ILogInUserUseCase {
         refreshToken,
       };
     } catch (error) {
-      this.logger?.error("Error during user login", { error, logInDTO });
+      this.logger.error("Error during user login", { error, logInDTO });
       if (error instanceof DomainError) throw error;
       throw new ApplicationError("Error during login process");
     }
