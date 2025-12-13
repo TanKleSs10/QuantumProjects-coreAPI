@@ -1,88 +1,99 @@
-import express from "express";
-import request from "supertest";
-
-const childLoggerMock = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-  child: jest.fn(),
-};
-childLoggerMock.child.mockReturnValue(childLoggerMock);
-
-const loggerMock = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-  child: jest.fn(() => childLoggerMock),
-};
-
-const securityServiceMock = {
-  hashPassword: jest.fn(),
-  verifyPassword: jest.fn(),
-  generateToken: jest.fn(),
-  verifyToken: jest.fn(),
-};
-
-const userRepositoryMock = {
-  createUser: jest.fn(),
-};
-
-const emailServiceMock = {
-  sendVerificationEmail: jest.fn(),
-  sendPasswordResetEmail: jest.fn(),
-  sendNotificationEmail: jest.fn(),
-};
-
+// 👇 IMPORTA PRIMERO LOS MOCKS DE ENVS Y LOGGER
 jest.mock("@src/config/envs", () => ({
   envs: {
     PORT: 3000,
     ENVIRONMENT: "test",
     LOKI_HOST: "http://localhost",
-    URI_DB: "mongodb://localhost",
-    FRONTEND_URL: "http://localhost:3000",
-    APP_URL: "http://localhost:3000",
-    JWT_SECRET: "secret",
-    JWT_EXPIRES_IN: "1h",
-    SMTP_HOST: "smtp.local",
+    URI_DB: "mongodb://test",
+    JWT_SECRET: "secret123",
+    REFRESH_JWT_SECRET: "refresh123",
+    SMTP_HOST: "smtp.test.com",
     SMTP_PORT: 587,
-    SMTP_USER: "user",
-    SMTP_PASS: "pass",
+    SMTP_USER: "test",
+    SMTP_PASS: "test",
     SMTP_SECURE: false,
   },
 }));
 
-jest.mock("@src/infrastructure/logs", () => ({ logger: loggerMock }));
+jest.mock("@src/infrastructure/logs/LoggerFactory", () => {
+  const logger: ILogger = {
+    log: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    child: jest.fn().mockReturnThis(),
+    getLevel: jest.fn().mockReturnValue("debug"),
+  };
 
-jest.mock("@src/infrastructure/factories/securityServiceFactory", () => ({
-  securityService: securityServiceMock,
-}));
+  return { createLogger: () => logger };
+});
+
+// -----------------------------
+// MOCKS DE FACTORIES
+// -----------------------------
 
 jest.mock("@src/infrastructure/factories/userRepositoryFactory", () => ({
-  userRepository: userRepositoryMock,
+  userRepository: {
+    createUser: jest.fn(),
+    getUserById: jest.fn(),
+    getUserByEmail: jest.fn(),
+    getAllUsers: jest.fn(),
+    updateUser: jest.fn(),
+    verifyUser: jest.fn(),
+    updatePassword: jest.fn(),
+    deleteUser: jest.fn(),
+  },
+}));
+
+jest.mock("@src/infrastructure/factories/securityServiceFactory", () => ({
+  securityService: {
+    hashPassword: jest.fn(),
+    verifyPassword: jest.fn(),
+    generateToken: jest.fn(),
+    verifyToken: jest.fn(),
+  },
 }));
 
 jest.mock("@src/infrastructure/factories/emailServiceFactory", () => ({
-  emailService: emailServiceMock,
+  emailService: {
+    sendVerificationEmail: jest.fn(),
+    sendPasswordResetEmail: jest.fn(),
+    sendNotificationEmail: jest.fn(),
+  },
 }));
 
-import { UserRoutes } from "@src/presentation/user/userRoutes";
+import express from "express";
+import request from "supertest";
+import { AuthRoutes } from "@src/presentation/auth/authRoutes";
+import { ILogger } from "@src/interfaces/Logger";
 
-const buildApp = () => {
+const createTestApp = () => {
   const app = express();
   app.use(express.json());
-  app.use("/users", UserRoutes.routes);
+  app.use("/auth", AuthRoutes.routes);
   return app;
 };
 
-describe("UserRoutes - register", () => {
+describe("POST /auth/signup", () => {
+  let app: ReturnType<typeof createTestApp>;
+
+  const { userRepository } = jest.requireMock(
+    "@src/infrastructure/factories/userRepositoryFactory",
+  );
+  const { securityService } = jest.requireMock(
+    "@src/infrastructure/factories/securityServiceFactory",
+  );
+  const { emailService } = jest.requireMock(
+    "@src/infrastructure/factories/emailServiceFactory",
+  );
+
   beforeEach(() => {
+    app = createTestApp();
     jest.clearAllMocks();
   });
 
   it("returns 201 when user is created successfully", async () => {
-    const app = buildApp();
     const user = {
       id: "user-1",
       name: "Test User",
@@ -91,11 +102,11 @@ describe("UserRoutes - register", () => {
       isVerified: false,
     };
 
-    securityServiceMock.hashPassword.mockResolvedValueOnce("hashed-password");
-    userRepositoryMock.createUser.mockResolvedValueOnce(user);
-    securityServiceMock.generateToken.mockResolvedValueOnce("verification-token");
+    securityService.hashPassword.mockResolvedValue("hashed-password");
+    userRepository.createUser.mockResolvedValue(user);
+    securityService.generateToken.mockResolvedValue("verification-token");
 
-    const response = await request(app).post("/users").send({
+    const response = await request(app).post("/auth/signup").send({
       name: user.name,
       email: user.email,
       password: "plainPassword123",
@@ -104,37 +115,41 @@ describe("UserRoutes - register", () => {
     expect(response.status).toBe(201);
     expect(response.body).toMatchObject({
       success: true,
-      message: "user created success",
-      data: user,
+      message: "Check your email to verify your account",
+      data: { user },
     });
-    expect(emailServiceMock.sendVerificationEmail).toHaveBeenCalledWith(
+    expect(emailService.sendVerificationEmail).toHaveBeenCalledWith(
       user,
       "verification-token",
     );
   });
 
   it("returns 400 for invalid payload", async () => {
-    const app = buildApp();
-
-    const response = await request(app).post("/users").send({ email: "invalid" });
+    const response = await request(app)
+      .post("/auth/signup")
+      .send({ email: "invalid" });
 
     expect(response.status).toBe(400);
-    expect(response.body).toMatchObject({ success: false, message: "Invalid user data" });
+    expect(response.body).toMatchObject({
+      success: false,
+      message: "Invalid input: expected string, received undefined",
+    });
   });
 
-  it("returns 400 when repository throws an error", async () => {
-    const app = buildApp();
+  it("returns 500 when repository throws an error", async () => {
+    securityService.hashPassword.mockResolvedValue("hashed-password");
+    userRepository.createUser.mockRejectedValue(new Error("db error"));
 
-    securityServiceMock.hashPassword.mockResolvedValueOnce("hashed-password");
-    userRepositoryMock.createUser.mockRejectedValueOnce(new Error("db error"));
-
-    const response = await request(app).post("/users").send({
+    const response = await request(app).post("/auth/signup").send({
       name: "Test User",
       email: "test@example.com",
       password: "plainPassword123",
     });
 
-    expect(response.status).toBe(400);
-    expect(response.body).toMatchObject({ success: false, message: "Failed to create user" });
+    expect(response.status).toBe(500);
+    expect(response.body).toMatchObject({
+      success: false,
+      message: "Internal server error",
+    });
   });
 });

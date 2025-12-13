@@ -35,8 +35,14 @@ jest.mock("@src/infrastructure/logs/LoggerFactory", () => {
 
 jest.mock("@src/infrastructure/factories/userRepositoryFactory", () => ({
   userRepository: {
-    verifyPassword: jest.fn(),
-    generateToken: jest.fn(),
+    createUser: jest.fn(),
+    getUserById: jest.fn(),
+    getUserByEmail: jest.fn(),
+    getAllUsers: jest.fn(),
+    updateUser: jest.fn(),
+    verifyUser: jest.fn(),
+    updatePassword: jest.fn(),
+    deleteUser: jest.fn(),
   },
 }));
 
@@ -99,7 +105,7 @@ describe("POST /auth/login", () => {
 
     const cookies = Array.isArray(rawCookies) ? rawCookies : [rawCookies];
 
-    const loginCookie = cookies.find((c) => c.startsWith("access-token="));
+    const loginCookie = cookies.find((c) => c.startsWith("refresh_token="));
     expect(loginCookie).toBeDefined();
 
     expect(res.status).toBe(200);

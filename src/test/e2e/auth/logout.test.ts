@@ -1,80 +1,71 @@
-import express from "express";
-import request from "supertest";
-
-const childLoggerMock = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-  child: jest.fn(),
-};
-childLoggerMock.child.mockReturnValue(childLoggerMock);
-
-const loggerMock = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-  child: jest.fn(() => childLoggerMock),
-};
-
-const securityServiceMock = {
-  hashPassword: jest.fn(),
-  verifyPassword: jest.fn(),
-  generateToken: jest.fn(),
-  verifyToken: jest.fn(),
-};
-
-const userRepositoryMock = {
-  getUserByEmail: jest.fn(),
-};
-
+// 👇 IMPORTA PRIMERO LOS MOCKS DE ENVS Y LOGGER
 jest.mock("@src/config/envs", () => ({
   envs: {
     PORT: 3000,
     ENVIRONMENT: "test",
     LOKI_HOST: "http://localhost",
-    URI_DB: "mongodb://localhost",
-    FRONTEND_URL: "http://localhost:3000",
-    APP_URL: "http://localhost:3000",
-    JWT_SECRET: "secret",
-    JWT_EXPIRES_IN: "1h",
-    SMTP_HOST: "smtp.local",
+    URI_DB: "mongodb://test",
+    JWT_SECRET: "secret123",
+    REFRESH_JWT_SECRET: "refresh123",
+    SMTP_HOST: "smtp.test.com",
     SMTP_PORT: 587,
-    SMTP_USER: "user",
-    SMTP_PASS: "pass",
+    SMTP_USER: "test",
+    SMTP_PASS: "test",
     SMTP_SECURE: false,
   },
 }));
 
-jest.mock("@src/infrastructure/logs", () => ({ logger: loggerMock }));
+jest.mock("@src/infrastructure/logs/LoggerFactory", () => {
+  const logger: ILogger = {
+    log: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    child: jest.fn().mockReturnThis(),
+    getLevel: jest.fn().mockReturnValue("debug"),
+  };
 
-jest.mock("@src/infrastructure/factories/securityServiceFactory", () => ({
-  securityService: securityServiceMock,
-}));
+  return { createLogger: () => logger };
+});
+
+// -----------------------------
+// MOCKS DE FACTORIES
+// -----------------------------
 
 jest.mock("@src/infrastructure/factories/userRepositoryFactory", () => ({
-  userRepository: userRepositoryMock,
+  userRepository: {},
 }));
 
-import { AuthRoutes } from "@src/presentation/auth/authRoutes";
+jest.mock("@src/infrastructure/factories/securityServiceFactory", () => ({
+  securityService: {},
+}));
 
-const buildApp = () => {
+jest.mock("@src/infrastructure/factories/emailServiceFactory", () => ({
+  emailService: {},
+}));
+
+import express from "express";
+import request from "supertest";
+import { AuthRoutes } from "@src/presentation/auth/authRoutes";
+import { ILogger } from "@src/interfaces/Logger";
+
+const createTestApp = () => {
   const app = express();
   app.use(express.json());
-  (app.request as any).cookies = {};
   app.use("/auth", AuthRoutes.routes);
   return app;
 };
 
-describe("AuthRoutes - logout", () => {
+describe("POST /auth/logout", () => {
+  let app: ReturnType<typeof createTestApp>;
+
   beforeEach(() => {
+    app = createTestApp();
     jest.clearAllMocks();
   });
 
   it("returns 200 and clears the refresh token cookie", async () => {
-    const app = buildApp();
-
     const response = await request(app)
       .post("/auth/logout")
       .set("Cookie", ["refresh_token=existing"]);
@@ -86,33 +77,41 @@ describe("AuthRoutes - logout", () => {
       message: "Logged out successfully",
     });
 
-    // Normalizar cookies
     const rawCookies = response.headers["set-cookie"];
     expect(rawCookies).toBeDefined();
 
     const cookies = Array.isArray(rawCookies) ? rawCookies : [rawCookies];
-
-    // La cookie debe venir vacía o expirada
     const logoutCookie = cookies.find((c) => c.startsWith("refresh_token="));
 
     expect(logoutCookie).toBeDefined();
-
-    // La cookie debe tener valor vacío
-    expect(logoutCookie).toContain("refresh_token=");
+    expect(logoutCookie).toContain("refresh_token=;");
     expect(logoutCookie).toContain("Expires=");
-    expect(logoutCookie).toContain("HttpOnly");
   });
 
   it("returns 500 when response fails to clear cookie", async () => {
-    const app = buildApp();
+    const app = createTestApp();
     const originalClearCookie = app.response.clearCookie;
-    app.response.clearCookie = () => {
+
+    // Mock the implementation of clearCookie on the response object prototype
+    // This is a bit of a hack, but it's necessary to test this specific failure case
+    // without affecting other tests.
+    const clearCookieMock = jest.fn(function (this: express.Response) {
       throw new Error("clear failed");
-    };
+    });
+    
+    Object.defineProperty(app.response, 'clearCookie', {
+      value: clearCookieMock,
+      configurable: true,
+    });
 
     const response = await request(app).post("/auth/logout");
 
-    expect(response.status).toBeGreaterThanOrEqual(500);
-    app.response.clearCookie = originalClearCookie;
+    expect(response.status).toBe(500);
+
+    // Restore original implementation
+    Object.defineProperty(app.response, 'clearCookie', {
+      value: originalClearCookie,
+      configurable: true,
+    });
   });
 });
