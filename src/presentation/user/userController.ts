@@ -90,7 +90,11 @@ export class UserController {
         .json({ success: false, message: "Invalid update data" });
     }
 
-    new UpdateUserUseCase(this.userRepository, this.securityService)
+    new UpdateUserUseCase(
+      this.userRepository,
+      this.securityService,
+      this.logger,
+    )
       .execute(userId, updateData.data!)
       .then((user) => {
         res.status(200).json({ success: true, data: user });

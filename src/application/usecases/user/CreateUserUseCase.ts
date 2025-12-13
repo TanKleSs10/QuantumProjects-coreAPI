@@ -15,20 +15,20 @@ export class CreateUserUseCase implements ICreateUserUseCase {
     private readonly userRepository: IUserRepository,
     private readonly securityService: ISecurityService,
     private readonly emailService: IEmailService,
-    private readonly logger?: ILogger,
+    private readonly logger: ILogger,
   ) {
     this.logger = logger.child("CreateUserUseCase");
   }
 
   async excecute(userData: CreateUserDTO): Promise<User> {
     try {
-      this.logger?.debug("Starting user creation process", { userData });
+      this.logger.debug("Starting user creation process", { userData });
 
       const passwordHashed = await this.securityService.hashPassword(
         userData.password,
       );
 
-      this.logger?.debug("Password hashed successfully");
+      this.logger.debug("Password hashed successfully");
 
       const userDataWithHashedPassword = {
         ...userData,
@@ -39,7 +39,7 @@ export class CreateUserUseCase implements ICreateUserUseCase {
         userDataWithHashedPassword,
       );
 
-      this.logger?.info("User created successfully", { userId: user.id });
+      this.logger.info("User created successfully", { userId: user.id });
 
       // 📧 3. Generate verification token
       const verificationToken = await this.securityService.generateToken(
@@ -47,18 +47,18 @@ export class CreateUserUseCase implements ICreateUserUseCase {
         "1h",
       );
 
-      this.logger?.debug("Verification token generated");
+      this.logger.debug("Verification token generated");
 
       await this.emailService.sendVerificationEmail(user, verificationToken);
 
-      this.logger?.info("Verification email sent", {
+      this.logger.info("Verification email sent", {
         email: user.email,
         userId: user.id,
       });
 
       return user;
     } catch (error: any) {
-      this.logger?.error("User creation failed", {
+      this.logger.error("User creation failed", {
         error: error instanceof Error ? error.message : String(error),
       });
 

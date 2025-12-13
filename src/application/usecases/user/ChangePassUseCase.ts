@@ -10,27 +10,27 @@ interface IChangePassUseCase {
 }
 
 export class ChangePassUseCase implements IChangePassUseCase {
-  private readonly logger?: ILogger;
+  private readonly logger: ILogger;
 
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly securityService: ISecurityService,
-    logger?: ILogger,
+    logger: ILogger,
   ) {
-    this.logger = logger?.child("ChangePassUseCase");
+    this.logger = logger.child("ChangePassUseCase");
   }
 
   async execute(changePassDTO: ChangePassDTO): Promise<User> {
     try {
-      const { userId, currentPassword, password: newPassword } = changePassDTO;
+      const { userId, currentPassword, newPassword } = changePassDTO;
 
-      this.logger?.info("Starting password change process", { userId });
+      this.logger.info("Starting password change process", { userId });
 
       // 1. Validate user exists
       const user = await this.userRepository.getUserById(userId);
 
       if (!user) {
-        this.logger?.warn("User not found for password change", { userId });
+        this.logger.warn("User not found for password change", { userId });
         throw new DomainError("User does not exist");
       }
 
@@ -41,7 +41,7 @@ export class ChangePassUseCase implements IChangePassUseCase {
       );
 
       if (!isValidPassword) {
-        this.logger?.warn("Incorrect current password", { userId });
+        this.logger.warn("Incorrect current password", { userId });
         throw new DomainError("Current password is incorrect");
       }
 
@@ -52,7 +52,7 @@ export class ChangePassUseCase implements IChangePassUseCase {
       );
 
       if (isSamePassword) {
-        this.logger?.warn("Attempt to reuse old password", { userId });
+        this.logger.warn("Attempt to reuse old password", { userId });
         throw new DomainError(
           "New password cannot be the same as old password",
         );
@@ -69,14 +69,14 @@ export class ChangePassUseCase implements IChangePassUseCase {
       );
 
       if (!updatedUser) {
-        this.logger?.error("Failed to update password", { userId });
+        this.logger.error("Failed to update password", { userId });
         throw new DomainError("Could not update password");
       }
 
-      this.logger?.info("Password updated successfully", { userId });
+      this.logger.info("Password updated successfully", { userId });
       return updatedUser;
     } catch (error) {
-      this.logger?.error("Unexpected error updating password", { error });
+      this.logger.error("Unexpected error updating password", { error });
       throw error instanceof Error
         ? error
         : new DomainError("Unexpected error updating password");

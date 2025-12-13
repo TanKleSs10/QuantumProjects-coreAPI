@@ -25,13 +25,15 @@ jest.mock("@src/infrastructure/logs/LoggerFactory", () => {
     child: jest.fn().mockReturnThis(),
     getLevel: jest.fn().mockReturnValue("debug"),
   };
+
+  return { createLogger: () => logger };
 });
 
 // -----------------------------
 // MOCKS DE FACTORIES
 // -----------------------------
 
-jest.mock("@src/infrastructure/repositories/UserRepositoryFactory", () => ({
+jest.mock("@src/infrastructure/factories/userRepositoryFactory", () => ({
   userRepository: {
     verifyPassword: jest.fn(),
     generateToken: jest.fn(),
