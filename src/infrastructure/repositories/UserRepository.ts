@@ -9,8 +9,21 @@ export class UserRepository implements IUserRepository {
   constructor(private readonly userDatasource: IUserDatasource) {}
 
   async createUser(userData: CreateUserDTO): Promise<User> {
-    const existingUser = await this.getUserByEmail(userData.email);
-    if (existingUser) throw new InfrastructureError("User already exists");
+    try {
+      const existingUser = await this.getUserByEmail(userData.email);
+      if (existingUser) throw new InfrastructureError("User already exists");
+    } catch (error) {
+      if (
+        error instanceof InfrastructureError &&
+        error.message === "User not found"
+      ) {
+        // User does not exist, continue with creation
+      } else {
+        throw new RepositoryError("Error in UserRepository createUser", {
+          cause: error,
+        });
+      }
+    }
 
     try {
       const newUser = await this.userDatasource.createUser(userData);
@@ -23,16 +36,10 @@ export class UserRepository implements IUserRepository {
     }
   }
 
-  async getUserById(id: string): Promise<User | null> {
+  async getUserById(id: string): Promise<User> {
     try {
       return await this.userDatasource.getUserById(id);
     } catch (error) {
-      if (
-        error instanceof InfrastructureError &&
-        error.message === "User not found"
-      ) {
-        return null;
-      }
       throw new RepositoryError("Error in UserRepository getUserById", {
         cause: error,
       });
@@ -55,16 +62,10 @@ export class UserRepository implements IUserRepository {
     }
   }
 
-  async getAllUsers(): Promise<User[] | []> {
+  async getAllUsers(): Promise<User[]> {
     try {
       return await this.userDatasource.getAllUsers();
     } catch (error) {
-      if (
-        error instanceof InfrastructureError &&
-        error.message === "No users found"
-      ) {
-        return [];
-      }
       throw new RepositoryError("Error in UserRepository getAllUsers", {
         cause: error,
       });
@@ -74,32 +75,20 @@ export class UserRepository implements IUserRepository {
   async updateUser(
     userId: string,
     updateData: Partial<CreateUserDTO>,
-  ): Promise<User | null> {
+  ): Promise<User> {
     try {
       return await this.userDatasource.updateUser(userId, updateData);
     } catch (error) {
-      if (
-        error instanceof InfrastructureError &&
-        error.message === "User not found"
-      ) {
-        return null;
-      }
       throw new RepositoryError("Error in UserRepository updateUser", {
         cause: error,
       });
     }
   }
 
-  async verifyUser(userId: string): Promise<User | null> {
+  async verifyUser(userId: string): Promise<User> {
     try {
       return await this.userDatasource.markUserAsVerified(userId);
     } catch (error) {
-      if (
-        error instanceof InfrastructureError &&
-        error.message === "User not found"
-      ) {
-        return null;
-      }
       throw new RepositoryError("Error in UserRepository verifyUser", {
         cause: error,
       });
@@ -109,16 +98,10 @@ export class UserRepository implements IUserRepository {
   async updatePassword(
     userId: string,
     passwordHash: string,
-  ): Promise<User | null> {
+  ): Promise<User> {
     try {
       return await this.userDatasource.updatePassword(userId, passwordHash);
     } catch (error) {
-      if (
-        error instanceof InfrastructureError &&
-        error.message === "User not found"
-      ) {
-        return null;
-      }
       throw new RepositoryError("Error in UserRepository updatePassword", {
         cause: error,
       });
@@ -129,12 +112,6 @@ export class UserRepository implements IUserRepository {
     try {
       return await this.userDatasource.deleteUser(id);
     } catch (error) {
-      if (
-        error instanceof InfrastructureError &&
-        error.message === "User not found"
-      ) {
-        return false;
-      }
       throw new RepositoryError("Error in UserRepository deleteUser", {
         cause: error,
       });
