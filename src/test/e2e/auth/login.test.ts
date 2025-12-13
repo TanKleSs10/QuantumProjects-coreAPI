@@ -16,36 +16,25 @@ jest.mock("@src/config/envs", () => ({
 }));
 
 jest.mock("@src/infrastructure/logs/LoggerFactory", () => {
-  const fakeChild: ILogger = {
+  const logger: ILogger = {
     log: jest.fn(),
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
     debug: jest.fn(),
-    child: jest.fn(() => fakeChild),
-    getLevel: jest.fn(() => "debug"),
-  };
-
-  return {
-    createLogger: jest.fn(() => fakeChild),
+    child: jest.fn().mockReturnThis(),
+    getLevel: jest.fn().mockReturnValue("debug"),
   };
 });
-
-// 👇 AHORA IMPORTAS LO DEMÁS
-import request from "supertest";
-import express, { Express } from "express";
-
-import { AuthRoutes } from "@src/presentation/auth/authRoutes";
-import { userRepository } from "@src/infrastructure/factories/userRepositoryFactory";
-import { securityService } from "@src/infrastructure/factories/securityServiceFactory";
-import { ILogger } from "@src/interfaces/Logger";
 
 // -----------------------------
 // MOCKS DE FACTORIES
 // -----------------------------
-jest.mock("@src/infrastructure/factories/userRepositoryFactory", () => ({
+
+jest.mock("@src/infrastructure/repositories/UserRepositoryFactory", () => ({
   userRepository: {
-    getUserByEmail: jest.fn(),
+    verifyPassword: jest.fn(),
+    generateToken: jest.fn(),
   },
 }));
 
@@ -56,10 +45,12 @@ jest.mock("@src/infrastructure/factories/securityServiceFactory", () => ({
   },
 }));
 
-// -----------------------------
-// APP PARA TESTING
-// -----------------------------
-const createTestApp = (): Express => {
+import express from "express";
+import request from "supertest";
+import { AuthRoutes } from "@src/presentation/auth/authRoutes";
+import { ILogger } from "@src/interfaces/Logger";
+
+const createTestApp = () => {
   const app = express();
   app.use(express.json());
   app.use("/auth", AuthRoutes.routes);
@@ -67,15 +58,22 @@ const createTestApp = (): Express => {
 };
 
 describe("POST /auth/login", () => {
-  let app: Express;
+  let app: ReturnType<typeof createTestApp>;
+
+  const { userRepository } = jest.requireMock(
+    "@src/infrastructure/factories/userRepositoryFactory",
+  );
+  const { securityService } = jest.requireMock(
+    "@src/infrastructure/factories/securityServiceFactory",
+  );
 
   beforeEach(() => {
     app = createTestApp();
     jest.clearAllMocks();
   });
 
-  it("should return 200 and tokens on login success", async () => {
-    (userRepository.getUserByEmail as jest.Mock).mockResolvedValue({
+  it("returns 200 and tokens on success", async () => {
+    userRepository.getUserByEmail.mockResolvedValue({
       id: "1",
       email: "test@test.com",
       password: "hashed",
@@ -83,9 +81,8 @@ describe("POST /auth/login", () => {
       isVerified: true,
     });
 
-    (securityService.verifyPassword as jest.Mock).mockResolvedValue(true);
-
-    (securityService.generateToken as jest.Mock)
+    securityService.verifyPassword.mockResolvedValue(true);
+    securityService.generateToken
       .mockResolvedValueOnce("access-token")
       .mockResolvedValueOnce("refresh-token");
 
@@ -94,21 +91,22 @@ describe("POST /auth/login", () => {
       password: "12345678",
     });
 
+    // Normalize cookie extraction for different environments
     const rawCookies = res.headers["set-cookie"];
     expect(rawCookies).toBeDefined();
 
     const cookies = Array.isArray(rawCookies) ? rawCookies : [rawCookies];
 
-    const refreshCookie = cookies.find((c) => c.startsWith("refresh_token="));
+    const loginCookie = cookies.find((c) => c.startsWith("access-token="));
+    expect(loginCookie).toBeDefined();
 
     expect(res.status).toBe(200);
-    expect(res.body.data.user.email).toBe("test@test.com");
     expect(res.body.token).toBe("access-token");
-    expect(refreshCookie).toBeDefined();
+    expect(res.body.data.user.email).toBe("test@test.com");
   });
 
-  it("should return 400 if user does not exist", async () => {
-    (userRepository.getUserByEmail as jest.Mock).mockResolvedValue(null);
+  it("returns 400 if user does not exist", async () => {
+    userRepository.getUserByEmail.mockResolvedValue(null);
 
     const res = await request(app).post("/auth/login").send({
       email: "notfound@test.com",
@@ -118,15 +116,15 @@ describe("POST /auth/login", () => {
     expect(res.status).toBe(400);
   });
 
-  it("should return 400 if password is invalid", async () => {
-    (userRepository.getUserByEmail as jest.Mock).mockResolvedValue({
+  it("returns 400 if password is invalid", async () => {
+    userRepository.getUserByEmail.mockResolvedValue({
       id: "1",
       email: "test@test.com",
       password: "hashed",
       isVerified: true,
     });
 
-    (securityService.verifyPassword as jest.Mock).mockResolvedValue(false);
+    securityService.verifyPassword.mockResolvedValue(false);
 
     const res = await request(app).post("/auth/login").send({
       email: "test@test.com",
@@ -136,15 +134,15 @@ describe("POST /auth/login", () => {
     expect(res.status).toBe(400);
   });
 
-  it("should return 400 if email is not verified", async () => {
-    (userRepository.getUserByEmail as jest.Mock).mockResolvedValue({
+  it("returns 400 if email is not verified", async () => {
+    userRepository.getUserByEmail.mockResolvedValue({
       id: "1",
       email: "test@test.com",
       password: "hashed",
       isVerified: false,
     });
 
-    (securityService.verifyPassword as jest.Mock).mockResolvedValue(true);
+    securityService.verifyPassword.mockResolvedValue(true);
 
     const res = await request(app).post("/auth/login").send({
       email: "test@test.com",
@@ -154,10 +152,8 @@ describe("POST /auth/login", () => {
     expect(res.status).toBe(400);
   });
 
-  it("should return 500 when an unexpected error happens", async () => {
-    (userRepository.getUserByEmail as jest.Mock).mockRejectedValue(
-      new Error("DB ERROR"),
-    );
+  it("returns 500 on unexpected error", async () => {
+    userRepository.getUserByEmail.mockRejectedValue(new Error("DB ERROR"));
 
     const res = await request(app).post("/auth/login").send({
       email: "test@test.com",

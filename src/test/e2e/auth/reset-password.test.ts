@@ -1,34 +1,6 @@
-import express from "express";
-import request from "supertest";
-
-const childLoggerMock = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-  child: jest.fn(),
-};
-childLoggerMock.child.mockReturnValue(childLoggerMock);
-
-const loggerMock = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-  child: jest.fn(() => childLoggerMock),
-};
-
-const securityServiceMock = {
-  hashPassword: jest.fn(),
-  verifyPassword: jest.fn(),
-  generateToken: jest.fn(),
-  verifyToken: jest.fn(),
-};
-
-const userRepositoryMock = {
-  getUserById: jest.fn(),
-  updatePassword: jest.fn(),
-};
+/**
+ * reset-password.e2e.test.ts
+ */
 
 jest.mock("@src/config/envs", () => ({
   envs: {
@@ -48,7 +20,41 @@ jest.mock("@src/config/envs", () => ({
   },
 }));
 
-jest.mock("@src/infrastructure/logs", () => ({ logger: loggerMock }));
+/**
+ * LoggerFactory mock
+ */
+jest.mock("@src/infrastructure/logs/LoggerFactory", () => {
+  const fakeChild: any = {};
+
+  Object.assign(fakeChild, {
+    log: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    getLevel: jest.fn(() => "debug"),
+    child: jest.fn(() => fakeChild),
+  });
+
+  return {
+    createLogger: jest.fn(() => fakeChild),
+  };
+});
+
+/**
+ * Service & repository mocks
+ */
+const securityServiceMock = {
+  hashPassword: jest.fn(),
+  verifyPassword: jest.fn(),
+  generateToken: jest.fn(),
+  verifyToken: jest.fn(),
+};
+
+const userRepositoryMock = {
+  getUserById: jest.fn(),
+  updatePassword: jest.fn(),
+};
 
 jest.mock("@src/infrastructure/factories/securityServiceFactory", () => ({
   securityService: securityServiceMock,
@@ -58,8 +64,16 @@ jest.mock("@src/infrastructure/factories/userRepositoryFactory", () => ({
   userRepository: userRepositoryMock,
 }));
 
+/**
+ * Imports AFTER mocks
+ */
+import express from "express";
+import request from "supertest";
 import { AuthRoutes } from "@src/presentation/auth/authRoutes";
 
+/**
+ * App builder
+ */
 const buildApp = () => {
   const app = express();
   app.use(express.json());
@@ -75,6 +89,7 @@ describe("AuthRoutes - reset-password", () => {
 
   it("returns 200 on successful password reset", async () => {
     const app = buildApp();
+
     const user = {
       id: "user-1",
       name: "User",
@@ -86,7 +101,10 @@ describe("AuthRoutes - reset-password", () => {
     securityServiceMock.verifyToken.mockResolvedValueOnce({ id: user.id });
     userRepositoryMock.getUserById.mockResolvedValueOnce(user);
     securityServiceMock.hashPassword.mockResolvedValueOnce("new-hash");
-    userRepositoryMock.updatePassword.mockResolvedValueOnce({ ...user, password: "new-hash" });
+    userRepositoryMock.updatePassword.mockResolvedValueOnce({
+      ...user,
+      password: "new-hash",
+    });
 
     const response = await request(app)
       .post("/auth/reset-password")
@@ -120,7 +138,10 @@ describe("AuthRoutes - reset-password", () => {
       .send({ token: "invalid", password: "Validpass1" });
 
     expect(response.status).toBe(401);
-    expect(response.body).toMatchObject({ success: false, message: "Token is invalid" });
+    expect(response.body).toMatchObject({
+      success: false,
+      message: "Token is invalid",
+    });
   });
 
   it("returns 400 when user is not found", async () => {
@@ -134,19 +155,27 @@ describe("AuthRoutes - reset-password", () => {
       .send({ token: "valid", password: "Validpass1" });
 
     expect(response.status).toBe(400);
-    expect(response.body).toMatchObject({ success: false, message: "User not found" });
+    expect(response.body).toMatchObject({
+      success: false,
+      message: "User not found",
+    });
   });
 
   it("returns 500 on unexpected error", async () => {
     const app = buildApp();
 
-    securityServiceMock.verifyToken.mockRejectedValueOnce(new Error("token failure"));
+    securityServiceMock.verifyToken.mockRejectedValueOnce(
+      new Error("token failure"),
+    );
 
     const response = await request(app)
       .post("/auth/reset-password")
       .send({ token: "valid", password: "Validpass1" });
 
     expect(response.status).toBe(500);
-    expect(response.body).toMatchObject({ success: false, message: "Internal server error" });
+    expect(response.body).toMatchObject({
+      success: false,
+      message: "Internal server error",
+    });
   });
 });

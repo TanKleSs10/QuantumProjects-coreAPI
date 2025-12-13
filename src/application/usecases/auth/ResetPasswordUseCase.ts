@@ -17,7 +17,7 @@ export class ResetPasswordUseCase implements IResetPasswordUseCase {
   constructor(
     private readonly securityService: ISecurityService,
     private readonly userRepository: IUserRepository,
-    private readonly logger?: ILogger,
+    private readonly logger: ILogger,
   ) {}
 
   async execute(token: string, newPassword: string): Promise<User> {
@@ -35,7 +35,7 @@ export class ResetPasswordUseCase implements IResetPasswordUseCase {
 
     const user = await this.userRepository.getUserById(payload.id);
     if (!user) {
-      this.logger?.warn("User not found during password reset", {
+      this.logger.warn("User not found during password reset", {
         userId: payload.id,
       });
       throw new DomainError("User not found");
@@ -50,7 +50,7 @@ export class ResetPasswordUseCase implements IResetPasswordUseCase {
       throw new DomainError("User not found");
     }
 
-    this.logger?.info("User password reset successfully", {
+    this.logger.info("User password reset successfully", {
       userId: updatedUser.id,
     });
     return updatedUser;
