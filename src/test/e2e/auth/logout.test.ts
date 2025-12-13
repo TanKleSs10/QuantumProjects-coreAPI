@@ -74,16 +74,33 @@ describe("AuthRoutes - logout", () => {
 
   it("returns 200 and clears the refresh token cookie", async () => {
     const app = buildApp();
-    Object.assign(app.request, { cookies: { refresh_token: "existing" } });
 
-    const response = await request(app).post("/auth/logout");
+    const response = await request(app)
+      .post("/auth/logout")
+      .set("Cookie", ["refresh_token=existing"]);
 
     expect(response.status).toBe(200);
+
     expect(response.body).toMatchObject({
       success: true,
       message: "Logged out successfully",
     });
-    expect(response.headers["set-cookie"]?.join(";")).toContain("refresh_token=");
+
+    // Normalizar cookies
+    const rawCookies = response.headers["set-cookie"];
+    expect(rawCookies).toBeDefined();
+
+    const cookies = Array.isArray(rawCookies) ? rawCookies : [rawCookies];
+
+    // La cookie debe venir vacía o expirada
+    const logoutCookie = cookies.find((c) => c.startsWith("refresh_token="));
+
+    expect(logoutCookie).toBeDefined();
+
+    // La cookie debe tener valor vacío
+    expect(logoutCookie).toContain("refresh_token=");
+    expect(logoutCookie).toContain("Expires=");
+    expect(logoutCookie).toContain("HttpOnly");
   });
 
   it("returns 500 when response fails to clear cookie", async () => {

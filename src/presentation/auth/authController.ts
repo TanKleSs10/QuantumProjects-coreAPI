@@ -13,6 +13,9 @@ import { LogInSchema } from "@src/domain/dtos/LogInDTO";
 import { LogInUserUseCase } from "@src/application/usecases/auth/LogInUserUseCase";
 import { envs } from "@src/config/envs";
 import { RefreshTokenUseCase } from "@src/application/usecases/auth/RefreshTokenUseCase";
+import { CreateUserSchema } from "@src/domain/dtos/CreateUserDTO";
+import { CreateUserUseCase } from "@src/application/usecases/user/CreateUserUseCase";
+import { IEmailService } from "@src/domain/services/IEmailService";
 
 const ResetPasswordSchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -26,10 +29,44 @@ export class AuthController {
   constructor(
     private readonly securityService: ISecurityService,
     private readonly userRepository: IUserRepository,
+    private readonly emailService: IEmailService,
     private readonly logger: ILogger,
   ) {
     this.logger = logger.child("AuthController");
   }
+
+  signUpUser = (req: Request, res: Response) => {
+    const parsed = CreateUserSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      this.logger.warn("Invalid signup payload", {
+        payload: req.body,
+        issues: parsed.error.message,
+      });
+      return res.status(400).json({
+        success: false,
+        message: parsed.error.issues[0]?.message ?? "Invalid payload",
+      });
+    }
+
+    new CreateUserUseCase(
+      this.userRepository,
+      this.securityService,
+      this.emailService,
+      this.logger,
+    )
+      .excecute(parsed.data)
+      .then((user) => {
+        res.status(201).json({
+          success: true,
+          data: { user },
+          message: "Check your email to verify your account",
+        });
+      })
+      .catch((error) => {
+        this.handleError(res, error);
+      });
+  };
 
   verifyEmail = async (req: Request, res: Response) => {
     const token = req.params.token;

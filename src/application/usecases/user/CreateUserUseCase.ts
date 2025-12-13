@@ -17,7 +17,7 @@ export class CreateUserUseCase implements ICreateUserUseCase {
     private readonly emailService: IEmailService,
     private readonly logger?: ILogger,
   ) {
-    this.logger = logger?.child("CreateUserUseCase");
+    this.logger = logger.child("CreateUserUseCase");
   }
 
   async excecute(userData: CreateUserDTO): Promise<User> {

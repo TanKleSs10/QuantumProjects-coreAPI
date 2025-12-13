@@ -9,8 +9,13 @@ export interface IUserRepository {
   updateUser(
     userId: string,
     updateData: Partial<CreateUserDTO>,
+<<<<<<< HEAD
   ): Promise<User>;
   verifyUser(userId: string): Promise<User>;
+=======
+  ): Promise<User | null>;
+  verifyUser(userId: string): Promise<User | null>;
+>>>>>>> 6283d2a (feat: add change password functionality)
   updatePassword(userId: string, passwordHash: string): Promise<User>;
   deleteUser(id: string): Promise<boolean>;
 }

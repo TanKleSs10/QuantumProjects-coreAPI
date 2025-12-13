@@ -1,6 +1,3 @@
-import request from "supertest";
-import express, { Express } from "express";
-
 // 👇 IMPORTA PRIMERO LOS MOCKS DE ENVS Y LOGGER
 jest.mock("@src/config/envs", () => ({
   envs: {
@@ -18,29 +15,30 @@ jest.mock("@src/config/envs", () => ({
   },
 }));
 
-jest.mock("@src/infrastructure/logs", () => {
-  const fakeChild = {
+jest.mock("@src/infrastructure/logs/LoggerFactory", () => {
+  const fakeChild: ILogger = {
+    log: jest.fn(),
+    info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
-    info: jest.fn(),
     debug: jest.fn(),
+    child: jest.fn(() => fakeChild),
+    getLevel: jest.fn(() => "debug"),
   };
 
   return {
-    logger: {
-      child: jest.fn(() => fakeChild),
-      warn: jest.fn(),
-      error: jest.fn(),
-      info: jest.fn(),
-      debug: jest.fn(),
-    },
+    createLogger: jest.fn(() => fakeChild),
   };
 });
 
 // 👇 AHORA IMPORTAS LO DEMÁS
+import request from "supertest";
+import express, { Express } from "express";
+
 import { AuthRoutes } from "@src/presentation/auth/authRoutes";
 import { userRepository } from "@src/infrastructure/factories/userRepositoryFactory";
 import { securityService } from "@src/infrastructure/factories/securityServiceFactory";
+import { ILogger } from "@src/interfaces/Logger";
 
 // -----------------------------
 // MOCKS DE FACTORIES
@@ -93,13 +91,20 @@ describe("POST /auth/login", () => {
 
     const res = await request(app).post("/auth/login").send({
       email: "test@test.com",
-      password: "123456",
+      password: "12345678",
     });
 
+    const rawCookies = res.headers["set-cookie"];
+    expect(rawCookies).toBeDefined();
+
+    const cookies = Array.isArray(rawCookies) ? rawCookies : [rawCookies];
+
+    const refreshCookie = cookies.find((c) => c.startsWith("refresh_token="));
+
     expect(res.status).toBe(200);
-    expect(res.body.user.email).toBe("test@test.com");
-    expect(res.body.accessToken).toBe("access-token");
-    expect(res.body.refreshToken).toBe("refresh-token");
+    expect(res.body.data.user.email).toBe("test@test.com");
+    expect(res.body.token).toBe("access-token");
+    expect(refreshCookie).toBeDefined();
   });
 
   it("should return 400 if user does not exist", async () => {
@@ -107,7 +112,7 @@ describe("POST /auth/login", () => {
 
     const res = await request(app).post("/auth/login").send({
       email: "notfound@test.com",
-      password: "123456",
+      password: "12345678",
     });
 
     expect(res.status).toBe(400);
@@ -143,7 +148,7 @@ describe("POST /auth/login", () => {
 
     const res = await request(app).post("/auth/login").send({
       email: "test@test.com",
-      password: "123456",
+      password: "12345678",
     });
 
     expect(res.status).toBe(400);
@@ -156,7 +161,7 @@ describe("POST /auth/login", () => {
 
     const res = await request(app).post("/auth/login").send({
       email: "test@test.com",
-      password: "123456",
+      password: "12345678",
     });
 
     expect(res.status).toBe(500);

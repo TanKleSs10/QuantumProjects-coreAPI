@@ -1,52 +1,32 @@
 import { Request, Response } from "express";
 import { ILogger } from "@src/interfaces/Logger";
-import { CreateUserSchema } from "@src/domain/dtos/CreateUserDTO";
 import { ISecurityService } from "@src/domain/services/ISecurityService";
 import { IUserRepository } from "@src/domain/repositories/IUserRepository";
-import { IEmailService } from "@src/domain/services/IEmailService";
 import { GetAllUsersUseCase } from "@src/application/usecases/user/GetAllUsersUseCase";
 import { GetUserByIdUseCase } from "@src/application/usecases/user/GetUserByIdUseCase";
 import { GetUserByEmailUseCase } from "@src/application/usecases/user/GetUserByEmailUseCase";
-import { CreateUserUseCase } from "@src/application/usecases/user/CreateUserUseCase";
 import { UpdateUserSchema } from "@src/domain/dtos/UpdateUserDTO";
 import { DeleteUserUseCase } from "@src/application/usecases/user/DeleteUserUseCase";
 import { UpdateUserUseCase } from "@src/application/usecases/user/UpdateUserUseCase";
+import { ChangePassSchema } from "@src/domain/dtos/ChangePassDTO";
+import { ChangePassUseCase } from "@src/application/usecases/user/ChangePassUseCase";
 
 export class UserController {
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly securityService: ISecurityService,
-    private readonly emailService: IEmailService,
     private readonly logger: ILogger,
   ) {}
 
-  createUser = (req: Request, res: Response) => {
-    const userData = CreateUserSchema.safeParse(req.body);
-    if (!userData.success) {
-      this.logger.error("Invalid user data");
+  getUserById = (req: Request, res: Response) => {
+    const userId = req.userId ? req.userId : null;
+    if (!userId) {
+      this.logger.error("User ID is required");
       return res
         .status(400)
-        .json({ success: false, message: "Invalid user data" });
+        .json({ success: false, message: "User ID is required" });
     }
-    new CreateUserUseCase(
-      this.userRepository,
-      this.securityService,
-      this.emailService,
-    )
-      .excecute(userData.data!)
-      .then((user) => {
-        res
-          .status(201)
-          .json({ success: true, message: "user created success", data: user });
-      })
-      .catch((error) => {
-        this.logger.error("Error creating user", error);
-        res.status(400).json({ success: false, message: error.message });
-      });
-  };
 
-  getUserById = (req: Request, res: Response) => {
-    const userId = req.params.id;
     new GetUserByIdUseCase(this.userRepository, this.logger)
       .execute(userId)
       .then((user) => {
@@ -89,7 +69,12 @@ export class UserController {
   };
 
   updateUser = (req: Request, res: Response) => {
-    const userId = req.params.id;
+    const userId = req.userId ? req.userId : null;
+    if (!userId) {
+      this.logger.error("Unauthorized: No user ID found in request");
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
     if (!userId) {
       this.logger.error("User ID is required");
       return res
@@ -111,6 +96,52 @@ export class UserController {
         res.status(200).json({ success: true, data: user });
       })
       .catch((error) => {
+        res.status(500).json({ success: false, message: error.message });
+      });
+  };
+
+  changePassword = (req: Request, res: Response) => {
+    const userId = req.userId;
+
+    if (!userId) {
+      this.logger.error("Unauthorized: No user ID found in request");
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    const parsed = ChangePassSchema.safeParse({
+      userId,
+      currentPassword,
+      newPassword,
+    });
+
+    if (!parsed.success) {
+      this.logger.error("Invalid change password data", {
+        issues: parsed.error.message,
+      });
+
+      return res.status(400).json({
+        success: false,
+        message: "Invalid change password data",
+        errors: parsed.error.message,
+      });
+    }
+
+    new ChangePassUseCase(
+      this.userRepository,
+      this.securityService,
+      this.logger,
+    )
+      .execute(parsed.data)
+      .then(() => {
+        res.status(200).json({
+          success: true,
+          message: "Password changed successfully",
+        });
+      })
+      .catch((error) => {
+        this.logger.error("Error changing password", error);
         res.status(500).json({ success: false, message: error.message });
       });
   };

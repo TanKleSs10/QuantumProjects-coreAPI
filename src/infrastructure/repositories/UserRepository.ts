@@ -95,10 +95,14 @@ export class UserRepository implements IUserRepository {
     }
   }
 
+<<<<<<< HEAD
   async updatePassword(
     userId: string,
     passwordHash: string,
   ): Promise<User> {
+=======
+  async updatePassword(userId: string, passwordHash: string): Promise<User> {
+>>>>>>> 6283d2a (feat: add change password functionality)
     try {
       return await this.userDatasource.updatePassword(userId, passwordHash);
     } catch (error) {
