@@ -57,6 +57,7 @@ import express from "express";
 import request from "supertest";
 import { AuthRoutes } from "@src/presentation/auth/authRoutes";
 import { ILogger } from "@src/interfaces/Logger";
+import { REFRESH_TOKEN_COOKIE_NAME } from "@src/shared/constants";
 
 const createTestApp = () => {
   const app = express();
@@ -105,7 +106,9 @@ describe("POST /auth/login", () => {
 
     const cookies = Array.isArray(rawCookies) ? rawCookies : [rawCookies];
 
-    const loginCookie = cookies.find((c) => c.startsWith("refresh_token="));
+    const loginCookie = cookies.find((c) =>
+      c.startsWith(`${REFRESH_TOKEN_COOKIE_NAME}=`),
+    );
     expect(loginCookie).toBeDefined();
 
     expect(res.status).toBe(200);
