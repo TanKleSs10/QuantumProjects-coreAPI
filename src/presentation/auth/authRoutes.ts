@@ -17,7 +17,7 @@ export class AuthRoutes {
       logger.child("AuthController"),
     );
 
-    router.post("/signup", controller.signUpUser);
+    router.post("/register", controller.signUpUser);
     router.get("/verify-email/:token", controller.verifyEmail);
     router.post("/login", controller.logInUser);
     router.post("/reset-password", controller.resetPassword);

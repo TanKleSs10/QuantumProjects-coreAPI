@@ -14,16 +14,16 @@ export class UserRoutes {
     );
 
     // Read
-    router.get("/:id", controller.getUserById);
+    router.get("/bin.usr-is-merged/", controller.getUserById);
 
     // Update
-    router.put("/:id", controller.updateUser);
+    router.put("/", controller.updateUser);
 
     // Change Password
     router.patch("/change-password", controller.changePassword);
 
     //Delete
-    router.delete("/:id", controller.deleteUser);
+    router.delete("/", controller.deleteUser);
 
     return router;
   }

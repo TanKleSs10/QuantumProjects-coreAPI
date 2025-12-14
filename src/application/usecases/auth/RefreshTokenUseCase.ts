@@ -2,6 +2,11 @@ import { ISecurityService } from "@src/domain/services/ISecurityService";
 import { ILogger } from "@src/interfaces/Logger";
 import { ApplicationError } from "@src/shared/errors/ApplicationError";
 
+interface IRefreshTokenPayload {
+  id: string;
+  type: "refresh";
+}
+
 interface IRefreshTokenUseCase {
   execute(refreshToken: string): Promise<{
     accessToken: string;
@@ -27,27 +32,28 @@ export class RefreshTokenUseCase implements IRefreshTokenUseCase {
         throw new ApplicationError("Refresh token is required");
       }
 
-      // 1. Verificar refresh token
-      const payload = await this.securityService.verifyToken<{ id: string }>(
-        refreshToken,
-      );
+      // 1. Verificar refresh token (un solo método)
+      const payload =
+        await this.securityService.verifyToken<IRefreshTokenPayload>(
+          refreshToken,
+        );
 
-      if (!payload || !payload.id) {
-        this.logger.warn("Invalid refresh token");
+      if (!payload || payload.type !== "refresh" || !payload.id) {
+        this.logger.warn("Invalid refresh token payload", { payload });
         throw new ApplicationError("Invalid refresh token");
       }
 
-      const userId = payload.id; // 🔥 viene del token, no del cliente
+      const userId = payload.id;
 
-      // 2. Generar access token nuevo
+      // 2. Generar nuevo access token
       const newAccessToken = await this.securityService.generateToken(
-        { id: userId },
+        { id: userId, type: "access" },
         "15m",
       );
 
-      // 3. Generar refresh token nuevo (rotación segura)
+      // 3. Rotar refresh token (sin persistencia, MVP)
       const newRefreshToken = await this.securityService.generateToken(
-        { id: userId },
+        { id: userId, type: "refresh" },
         "7d",
       );
 
@@ -57,7 +63,12 @@ export class RefreshTokenUseCase implements IRefreshTokenUseCase {
       };
     } catch (error) {
       this.logger.error("Error refreshing token", { error });
-      throw new ApplicationError("Could not refresh token");
+
+      if (error instanceof ApplicationError) {
+        throw error;
+      }
+
+      throw new ApplicationError("Invalid or expired refresh token");
     }
   }
 }

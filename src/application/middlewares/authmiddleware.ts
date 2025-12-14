@@ -39,7 +39,10 @@ export const authMiddleware = async (
 
     try {
       // Intentamos verificar el token vía tu servicio
-      payload = await securityService.verifyToken<{ id: string }>(token);
+      payload = await securityService.verifyToken<{
+        id: string;
+        type: "access";
+      }>(token);
     } catch (err) {
       // Si fue un error propio de expiración JWT
       if (err instanceof jwt.TokenExpiredError) {
@@ -58,7 +61,7 @@ export const authMiddleware = async (
       });
     }
 
-    if (!payload || !payload.id) {
+    if (!payload || payload.type !== "access" || !payload.id) {
       return res.status(401).json({
         success: false,
         code: "INVALID_PAYLOAD",

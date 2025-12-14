@@ -75,7 +75,7 @@ const createTestApp = () => {
   return app;
 };
 
-describe("POST /auth/signup", () => {
+describe("POST /auth/register", () => {
   let app: ReturnType<typeof createTestApp>;
 
   const { userRepository } = jest.requireMock(
@@ -106,7 +106,7 @@ describe("POST /auth/signup", () => {
     userRepository.createUser.mockResolvedValue(user);
     securityService.generateToken.mockResolvedValue("verification-token");
 
-    const response = await request(app).post("/auth/signup").send({
+    const response = await request(app).post("/auth/register").send({
       name: user.name,
       email: user.email,
       password: "plainPassword123",
@@ -126,7 +126,7 @@ describe("POST /auth/signup", () => {
 
   it("returns 400 for invalid payload", async () => {
     const response = await request(app)
-      .post("/auth/signup")
+      .post("/auth/register")
       .send({ email: "invalid" });
 
     expect(response.status).toBe(400);
@@ -140,7 +140,7 @@ describe("POST /auth/signup", () => {
     securityService.hashPassword.mockResolvedValue("hashed-password");
     userRepository.createUser.mockRejectedValue(new Error("db error"));
 
-    const response = await request(app).post("/auth/signup").send({
+    const response = await request(app).post("/auth/register").send({
       name: "Test User",
       email: "test@example.com",
       password: "plainPassword123",
@@ -153,3 +153,4 @@ describe("POST /auth/signup", () => {
     });
   });
 });
+

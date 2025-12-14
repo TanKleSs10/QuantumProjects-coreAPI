@@ -52,12 +52,12 @@ export class LogInUserUseCase implements ILogInUserUseCase {
       }
 
       const accessToken = await this.securityService.generateToken(
-        { id: user.id },
+        { id: user.id, type: "access" },
         "15m",
       );
 
       const refreshToken = await this.securityService.generateToken(
-        { id: user.id },
+        { id: user.id, type: "refresh" },
         "7d",
       );
 
