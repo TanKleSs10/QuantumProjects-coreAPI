@@ -38,8 +38,8 @@ export class RefreshTokenUseCase implements IRefreshTokenUseCase {
           refreshToken,
         );
 
-      if (!payload || payload.type !== "refresh" || !payload.id) {
-        this.logger.warn("Invalid refresh token payload", { payload });
+      if (!payload || !payload.id || (payload.type && payload.type !== "refresh")) {
+        this.logger.warn("Invalid refresh token");
         throw new ApplicationError("Invalid refresh token");
       }
 

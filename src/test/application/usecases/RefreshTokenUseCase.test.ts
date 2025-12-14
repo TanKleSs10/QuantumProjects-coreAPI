@@ -34,14 +34,17 @@ describe("RefreshTokenUseCase", () => {
   });
 
   it("token inválido", async () => {
-    mockSecurityService.verifyToken.mockResolvedValueOnce(null);
+    mockSecurityService.verifyToken.mockResolvedValueOnce({ type: "access" });
 
     await expect(useCase.execute("bad-token")).rejects.toThrow(ApplicationError);
     expect(mockChildLogger.warn).toHaveBeenCalledWith("Invalid refresh token");
   });
 
   it("caso feliz", async () => {
-    mockSecurityService.verifyToken.mockResolvedValueOnce({ id: "user-id" });
+    mockSecurityService.verifyToken.mockResolvedValueOnce({
+      id: "user-id",
+      type: "refresh",
+    });
     mockSecurityService.generateToken
       .mockResolvedValueOnce("new-access")
       .mockResolvedValueOnce("new-refresh");
@@ -54,12 +57,12 @@ describe("RefreshTokenUseCase", () => {
     });
     expect(mockSecurityService.generateToken).toHaveBeenNthCalledWith(
       1,
-      { id: "user-id" },
+      { id: "user-id", type: "access" },
       "15m",
     );
     expect(mockSecurityService.generateToken).toHaveBeenNthCalledWith(
       2,
-      { id: "user-id" },
+      { id: "user-id", type: "refresh" },
       "7d",
     );
   });
@@ -72,7 +75,10 @@ describe("RefreshTokenUseCase", () => {
   });
 
   it("error inesperado en generateToken", async () => {
-    mockSecurityService.verifyToken.mockResolvedValueOnce({ id: "user-id" });
+    mockSecurityService.verifyToken.mockResolvedValueOnce({
+      id: "user-id",
+      type: "refresh",
+    });
     mockSecurityService.generateToken.mockRejectedValueOnce(new Error("jwt"));
 
     await expect(useCase.execute("token")).rejects.toThrow(ApplicationError);

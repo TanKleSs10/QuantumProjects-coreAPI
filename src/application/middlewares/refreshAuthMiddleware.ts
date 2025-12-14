@@ -1,4 +1,5 @@
 import { securityService } from "@src/infrastructure/factories/securityServiceFactory";
+import { REFRESH_TOKEN_COOKIE_NAME } from "@src/shared/constants";
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
@@ -8,7 +9,7 @@ export const refreshAuthMiddleware = async (
   next: NextFunction,
 ) => {
   try {
-    const refreshToken = req.cookies?.refresh_token;
+    const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME];
     if (!refreshToken) {
       return res.status(401).json({
         success: false,

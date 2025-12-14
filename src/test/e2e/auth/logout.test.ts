@@ -49,6 +49,7 @@ import express from "express";
 import request from "supertest";
 import { AuthRoutes } from "@src/presentation/auth/authRoutes";
 import { ILogger } from "@src/interfaces/Logger";
+import { REFRESH_TOKEN_COOKIE_NAME } from "@src/shared/constants";
 
 const createTestApp = () => {
   const app = express();
@@ -68,7 +69,7 @@ describe("POST /auth/logout", () => {
   it("returns 200 and clears the refresh token cookie", async () => {
     const response = await request(app)
       .post("/auth/logout")
-      .set("Cookie", ["refresh_token=existing"]);
+      .set("Cookie", [`${REFRESH_TOKEN_COOKIE_NAME}=existing`]);
 
     expect(response.status).toBe(200);
 
@@ -81,10 +82,12 @@ describe("POST /auth/logout", () => {
     expect(rawCookies).toBeDefined();
 
     const cookies = Array.isArray(rawCookies) ? rawCookies : [rawCookies];
-    const logoutCookie = cookies.find((c) => c.startsWith("refresh_token="));
+    const logoutCookie = cookies.find((c) =>
+      c.startsWith(`${REFRESH_TOKEN_COOKIE_NAME}=`),
+    );
 
     expect(logoutCookie).toBeDefined();
-    expect(logoutCookie).toContain("refresh_token=;");
+    expect(logoutCookie).toContain(`${REFRESH_TOKEN_COOKIE_NAME}=;`);
     expect(logoutCookie).toContain("Expires=");
   });
 

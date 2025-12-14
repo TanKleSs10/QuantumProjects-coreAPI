@@ -50,7 +50,7 @@ describe("CreateUserUseCase", () => {
     mockSecurityService.generateToken.mockResolvedValueOnce("verification-token");
     mockEmailService.sendVerificationEmail.mockResolvedValueOnce(undefined);
 
-    const result = await useCase.excecute(userInput as any);
+    const result = await useCase.execute(userInput as any);
 
     expect(result).toEqual(createdUser);
     expect(mockSecurityService.hashPassword).toHaveBeenCalledWith(userInput.password);
@@ -71,7 +71,7 @@ describe("CreateUserUseCase", () => {
   it("error inesperado en hashPassword", async () => {
     mockSecurityService.hashPassword.mockRejectedValueOnce(new Error("hash"));
 
-    await expect(useCase.excecute(userInput as any)).rejects.toThrow(
+    await expect(useCase.execute(userInput as any)).rejects.toThrow(
       ApplicationError,
     );
   });
@@ -80,7 +80,7 @@ describe("CreateUserUseCase", () => {
     mockSecurityService.hashPassword.mockResolvedValueOnce("hashed");
     mockUserRepository.createUser.mockRejectedValueOnce(new Error("repo"));
 
-    await expect(useCase.excecute(userInput as any)).rejects.toThrow(
+    await expect(useCase.execute(userInput as any)).rejects.toThrow(
       ApplicationError,
     );
   });
@@ -94,7 +94,7 @@ describe("CreateUserUseCase", () => {
     });
     mockSecurityService.generateToken.mockRejectedValueOnce(new Error("jwt"));
 
-    await expect(useCase.excecute(userInput as any)).rejects.toThrow(
+    await expect(useCase.execute(userInput as any)).rejects.toThrow(
       ApplicationError,
     );
   });
@@ -106,7 +106,7 @@ describe("CreateUserUseCase", () => {
     mockSecurityService.generateToken.mockResolvedValueOnce("verification-token");
     mockEmailService.sendVerificationEmail.mockRejectedValueOnce(new Error("mail"));
 
-    await expect(useCase.excecute(userInput as any)).rejects.toThrow(
+    await expect(useCase.execute(userInput as any)).rejects.toThrow(
       ApplicationError,
     );
   });

@@ -1,6 +1,7 @@
 import express from "express";
 import request from "supertest";
 import { InvalidTokenError } from "@src/shared/errors/InvalidTokenError";
+import { REFRESH_TOKEN_COOKIE_NAME } from "@src/shared/constants";
 
 const childLoggerMock = {
   info: jest.fn(),
@@ -75,9 +76,14 @@ describe("AuthRoutes - refresh", () => {
 
   it("returns 200 and rotates tokens when refresh token is valid", async () => {
     const app = buildApp();
-    Object.assign(app.request, { cookies: { refresh_token: "valid-refresh" } });
+    Object.assign(app.request, {
+      cookies: { [REFRESH_TOKEN_COOKIE_NAME]: "valid-refresh" },
+    });
 
-    securityServiceMock.verifyToken.mockResolvedValueOnce({ id: "user-1" });
+    securityServiceMock.verifyToken.mockResolvedValueOnce({
+      id: "user-1",
+      type: "refresh",
+    });
     securityServiceMock.generateToken
       .mockResolvedValueOnce("new-access")
       .mockResolvedValueOnce("new-refresh");
@@ -87,7 +93,11 @@ describe("AuthRoutes - refresh", () => {
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({ success: true, token: "new-access" });
     expect(response.headers["set-cookie"]).toEqual(
-      expect.arrayContaining([expect.stringContaining("refresh_token=new-refresh")]),
+      expect.arrayContaining([
+        expect.stringContaining(
+          `${REFRESH_TOKEN_COOKIE_NAME}=new-refresh`,
+        ),
+      ]),
     );
   });
 
@@ -102,7 +112,9 @@ describe("AuthRoutes - refresh", () => {
 
   it("returns 500 when refresh token is invalid", async () => {
     const app = buildApp();
-    Object.assign(app.request, { cookies: { refresh_token: "invalid" } });
+    Object.assign(app.request, {
+      cookies: { [REFRESH_TOKEN_COOKIE_NAME]: "invalid" },
+    });
 
     securityServiceMock.verifyToken.mockRejectedValueOnce(new InvalidTokenError());
 
@@ -114,9 +126,14 @@ describe("AuthRoutes - refresh", () => {
 
   it("returns 500 on unexpected generation error", async () => {
     const app = buildApp();
-    Object.assign(app.request, { cookies: { refresh_token: "valid-refresh" } });
+    Object.assign(app.request, {
+      cookies: { [REFRESH_TOKEN_COOKIE_NAME]: "valid-refresh" },
+    });
 
-    securityServiceMock.verifyToken.mockResolvedValueOnce({ id: "user-1" });
+    securityServiceMock.verifyToken.mockResolvedValueOnce({
+      id: "user-1",
+      type: "refresh",
+    });
     securityServiceMock.generateToken.mockRejectedValueOnce(new Error("signing failed"));
 
     const response = await request(app).post("/auth/refresh");
