@@ -15,6 +15,7 @@ import { envs } from "@src/config/envs";
 import { RefreshTokenUseCase } from "@src/application/usecases/auth/RefreshTokenUseCase";
 import { CreateUserSchema } from "@src/domain/dtos/CreateUserDTO";
 import { CreateUserUseCase } from "@src/application/usecases/user/CreateUserUseCase";
+import { REFRESH_TOKEN_COOKIE_NAME } from "@src/shared/constants";
 import { IEmailService } from "@src/domain/services/IEmailService";
 
 const ResetPasswordSchema = z.object({
@@ -35,37 +36,36 @@ export class AuthController {
     this.logger = logger.child("AuthController");
   }
 
-  signUpUser = (req: Request, res: Response) => {
-    const parsed = CreateUserSchema.safeParse(req.body);
+  signUpUser = async (req: Request, res: Response) => {
+    try {
+      const parsed = CreateUserSchema.safeParse(req.body);
 
-    if (!parsed.success) {
-      this.logger.warn("Invalid signup payload", {
-        payload: req.body,
-        issues: parsed.error.message,
-      });
-      return res.status(400).json({
-        success: false,
-        message: parsed.error.issues[0]?.message ?? "Invalid payload",
-      });
-    }
-
-    new CreateUserUseCase(
-      this.userRepository,
-      this.securityService,
-      this.emailService,
-      this.logger,
-    )
-      .excecute(parsed.data)
-      .then((user) => {
-        res.status(201).json({
-          success: true,
-          data: { user },
-          message: "Check your email to verify your account",
+      if (!parsed.success) {
+        this.logger.warn("Invalid signup payload", {
+          payload: req.body,
+          issues: parsed.error.message,
         });
-      })
-      .catch((error) => {
-        this.handleError(res, error);
+        return res.status(400).json({
+          success: false,
+          message: parsed.error.issues[0]?.message ?? "Invalid payload",
+        });
+      }
+
+      const user = await new CreateUserUseCase(
+        this.userRepository,
+        this.securityService,
+        this.emailService,
+        this.logger,
+      ).execute(parsed.data);
+
+      res.status(201).json({
+        success: true,
+        data: { user },
+        message: "Check your email to verify your account",
       });
+    } catch (error) {
+      this.handleError(res, error);
+    }
   };
 
   verifyEmail = async (req: Request, res: Response) => {
@@ -94,107 +94,112 @@ export class AuthController {
     }
   };
 
-  resetPassword = (req: Request, res: Response) => {
-    const parsed = ResetPasswordSchema.safeParse(req.body);
-    if (!parsed.success) {
-      this.logger.warn("Invalid reset password payload", {
-        issues: parsed.error.message,
-      });
-      return res.status(400).json({
-        success: false,
-        message: parsed.error.issues[0]?.message ?? "Invalid payload",
-      });
-    }
-
-    new ResetPasswordUseCase(
-      this.securityService,
-      this.userRepository,
-      this.logger,
-    )
-      .execute(parsed.data.token, parsed.data.password)
-      .then(() => {
-        res.status(200).json({
-          success: true,
-          message: "Password updated successfully",
+  resetPassword = async (req: Request, res: Response) => {
+    try {
+      const parsed = ResetPasswordSchema.safeParse(req.body);
+      if (!parsed.success) {
+        this.logger.warn("Invalid reset password payload", {
+          issues: parsed.error.message,
         });
-      })
-      .catch((error) => {
-        this.handleError(res, error);
+        return res.status(400).json({
+          success: false,
+          message: parsed.error.issues[0]?.message ?? "Invalid payload",
+        });
+      }
+
+      await new ResetPasswordUseCase(
+        this.securityService,
+        this.userRepository,
+        this.logger,
+      ).execute(parsed.data.token, parsed.data.password);
+
+      res.status(200).json({
+        success: true,
+        message: "Password updated successfully",
       });
+    } catch (error) {
+      this.handleError(res, error);
+    }
   };
 
-  logInUser = (req: Request, res: Response) => {
-    const parsed = LogInSchema.safeParse(req.body);
+  logInUser = async (req: Request, res: Response) => {
+    try {
+      const parsed = LogInSchema.safeParse(req.body);
 
-    if (!parsed.success) {
-      this.logger.warn("invalid login payload", {
-        issues: parsed.error.message,
-      });
+      if (!parsed.success) {
+        this.logger.warn("invalid login payload", {
+          issues: parsed.error.message,
+        });
 
-      res.status(400).json({
-        success: false,
-        message: parsed.error.issues[0]?.message ?? "Invalid payload",
-        errors: parsed.error.issues,
-      });
-      return;
+        return res.status(400).json({
+          success: false,
+          message: parsed.error.issues[0]?.message ?? "Invalid payload",
+          errors: parsed.error.issues,
+        });
+      }
+
+      const { user, accessToken, refreshToken } = await new LogInUserUseCase(
+        this.userRepository,
+        this.securityService,
+        this.logger,
+      ).execute(parsed.data!);
+
+      res
+        .cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
+          httpOnly: true,
+          secure: envs.ENVIRONMENT === "production",
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        })
+        .status(200)
+        .json({
+          success: true,
+          data: { user },
+          token: accessToken,
+        });
+    } catch (error) {
+      this.handleError(res, error);
     }
-
-    new LogInUserUseCase(this.userRepository, this.securityService, this.logger)
-      .execute(parsed.data!)
-      .then(({ user, accessToken, refreshToken }) => {
-        res
-          .cookie("refresh_token", refreshToken, {
-            httpOnly: true,
-            secure: envs.ENVIRONMENT === "production",
-            sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-          })
-          .status(200)
-          .json({
-            success: true,
-            data: { user },
-            token: accessToken,
-          });
-      })
-      .catch((error) => {
-        this.handleError(res, error);
-      });
   };
 
-  refreshToken = (req: Request, res: Response) => {
-    const refreshToken = req.cookies?.refresh_token as string | undefined;
+  refreshToken = async (req: Request, res: Response) => {
+    try {
+      const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME] as
+        | string
+        | undefined;
 
-    if (!refreshToken) {
-      this.logger.warn("Refresh token missing in request");
-      return res
-        .status(401)
-        .json({ success: false, message: "Refresh token is required" });
+      if (!refreshToken) {
+        this.logger.warn("Refresh token missing in request");
+        return res
+          .status(401)
+          .json({ success: false, message: "Refresh token is required" });
+      }
+
+      const { accessToken, refreshToken: rotatedRefreshToken } =
+        await new RefreshTokenUseCase(this.securityService, this.logger).execute(
+          refreshToken,
+        );
+
+      res
+        .cookie(REFRESH_TOKEN_COOKIE_NAME, rotatedRefreshToken, {
+          httpOnly: true,
+          secure: envs.ENVIRONMENT === "production",
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        })
+        .status(200)
+        .json({
+          success: true,
+          token: accessToken,
+        });
+    } catch (error) {
+      this.handleError(res, error);
     }
-
-    new RefreshTokenUseCase(this.securityService, this.logger)
-      .execute(refreshToken)
-      .then(({ accessToken, refreshToken: rotatedRefreshToken }) => {
-        res
-          .cookie("refresh_token", rotatedRefreshToken, {
-            httpOnly: true,
-            secure: envs.ENVIRONMENT === "production",
-            sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-          })
-          .status(200)
-          .json({
-            success: true,
-            token: accessToken,
-          });
-      })
-      .catch((error) => {
-        this.handleError(res, error);
-      });
   };
 
   logOutUser = (_req: Request, res: Response) => {
     res
-      .clearCookie("refresh_token", {
+      .clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
         httpOnly: true,
         secure: envs.ENVIRONMENT === "production",
         sameSite: "strict",

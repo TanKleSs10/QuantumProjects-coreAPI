@@ -7,7 +7,7 @@ import { ILogger } from "@src/interfaces/Logger";
 import { ApplicationError } from "@src/shared/errors/ApplicationError";
 
 export interface ICreateUserUseCase {
-  excecute(userData: CreateUserDTO): Promise<User>;
+  execute(userData: CreateUserDTO): Promise<User>;
 }
 
 export class CreateUserUseCase implements ICreateUserUseCase {
@@ -20,7 +20,7 @@ export class CreateUserUseCase implements ICreateUserUseCase {
     this.logger = logger.child("CreateUserUseCase");
   }
 
-  async excecute(userData: CreateUserDTO): Promise<User> {
+  async execute(userData: CreateUserDTO): Promise<User> {
     try {
       this.logger.debug("Starting user creation process", { userData });
 
