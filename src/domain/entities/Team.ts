@@ -1,37 +1,46 @@
 import { TeamMembership } from "./TeamMembership";
+import { User } from "./User";
 
-/**
- * Properties required to create a {@link Team} domain entity.
- */
-export interface TeamProps {
-  id: string;
-  name: string;
-  description?: string;
-  members?: TeamMembership[];
-  projectIds?: string[];
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-/**
- * Domain representation of a collaborative team.
- */
 export class Team {
-  public readonly id: string;
-  public name: string;
-  public description?: string;
-  public members: TeamMembership[];
-  public projectIds: string[];
-  public readonly createdAt?: Date;
-  public readonly updatedAt?: Date;
+  private members: TeamMembership[];
 
-  constructor(props: TeamProps) {
-    this.id = props.id;
-    this.name = props.name;
-    this.description = props.description;
-    this.members = props.members ?? [];
-    this.projectIds = props.projectIds ?? [];
-    this.createdAt = props.createdAt;
-    this.updatedAt = props.updatedAt;
+  constructor(
+    public readonly id: string,
+    public name: string,
+    public readonly owner: User,
+    members: TeamMembership[] = [],
+    public description?: string,
+  ) {
+    this.members = members;
+  }
+
+  getMembers(): readonly TeamMembership[] {
+    return this.members;
+  }
+
+  addMember(membership: TeamMembership) {
+    const exists = this.members.some((m) => m.userId === membership.userId);
+    if (exists) {
+      throw new Error("User already belongs to team");
+    }
+    this.members.push(membership);
+  }
+
+  removeMember(userId: string) {
+    if (this.owner.id === userId) {
+      throw new Error("Owner cannot be removed");
+    }
+    this.members = this.members.filter((m) => m.userId !== userId);
+  }
+
+  promoteToAdmin(userId: string) {
+    const member = this.findMember(userId);
+    member.promoteToAdmin();
+  }
+
+  private findMember(userId: string): TeamMembership {
+    const member = this.members.find((m) => m.userId === userId);
+    if (!member) throw new Error("Member not found");
+    return member;
   }
 }

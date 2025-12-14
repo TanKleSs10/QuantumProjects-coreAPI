@@ -1,25 +1,35 @@
 export type TeamRole = "owner" | "admin" | "member";
 
-export interface TeamMembershipProps {
-  teamId: string;
-  userId: string;
-  role: TeamRole;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
 export class TeamMembership {
-  public readonly teamId: string;
-  public readonly userId: string;
-  public role: TeamRole;
-  public readonly createdAt?: Date;
-  public readonly updatedAt?: Date;
+  constructor(
+    public readonly teamId: string,
+    public readonly userId: string,
+    private _role: TeamRole,
+  ) {}
 
-  constructor(props: TeamMembershipProps) {
-    this.teamId = props.teamId;
-    this.userId = props.userId;
-    this.role = props.role;
-    this.createdAt = props.createdAt;
-    this.updatedAt = props.updatedAt;
+  static createOwner(teamId: string, userId: string): TeamMembership {
+    return new TeamMembership(teamId, userId, "owner");
+  }
+
+  static creteAdmin(teamId: string, userId: string): TeamMembership {
+    return new TeamMembership(teamId, userId, "admin");
+  }
+
+  static createMember(teamId: string, userId: string): TeamMembership {
+    return new TeamMembership(teamId, userId, "member");
+  }
+
+  get role(): TeamRole {
+    return this._role;
+  }
+
+  promoteToAdmin(): void {
+    if (this._role === "owner") return;
+    this._role = "admin";
+  }
+
+  demoteToMember(): void {
+    if (this._role === "owner") return;
+    this._role = "member";
   }
 }

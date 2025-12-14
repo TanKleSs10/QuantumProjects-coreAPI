@@ -1,16 +1,23 @@
-import { getModelForClass, modelOptions, prop, Ref } from "@typegoose/typegoose";
-import type { ProjectModel } from "@src/infrastructure/database/models/ProjectModel";
+import {
+  getModelForClass,
+  modelOptions,
+  prop,
+  Ref,
+} from "@typegoose/typegoose";
 import type { UserModel } from "@src/infrastructure/database/models/UserModel";
 
 export class TeamMembershipModel {
   @prop({ ref: "User", required: true })
   public user!: Ref<UserModel>;
 
-  @prop({ required: true, enum: ["owner", "admin", "member"], type: () => String })
+  @prop({ required: true, enum: ["owner", "admin", "member"] })
   public role!: "owner" | "admin" | "member";
 }
 
-@modelOptions({ schemaOptions: { timestamps: true, collection: "teams" }, options: { customName: "Team" } })
+@modelOptions({
+  schemaOptions: { timestamps: true, collection: "teams" },
+  options: { customName: "Team" },
+})
 export class TeamModel {
   @prop({ required: true, trim: true })
   public name!: string;
@@ -18,11 +25,14 @@ export class TeamModel {
   @prop({ trim: true })
   public description?: string;
 
+  @prop({ ref: "User", required: true })
+  public owner!: Ref<UserModel>;
+
+  @prop({ default: false })
+  public isPersonal!: boolean;
+
   @prop({ type: () => [TeamMembershipModel], default: [] })
   public members!: TeamMembershipModel[];
-
-  @prop({ ref: "Project", default: [] })
-  public projects!: Ref<ProjectModel>[];
 }
 
 export const TeamMongoModel = getModelForClass(TeamModel);
