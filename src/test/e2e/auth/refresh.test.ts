@@ -65,7 +65,7 @@ const buildApp = () => {
   const app = express();
   app.use(express.json());
   (app.request as any).cookies = {};
-  app.use("/auth", AuthRoutes.routes);
+  app.use("/api/v1/auth", AuthRoutes.routes);
   return app;
 };
 
@@ -88,7 +88,7 @@ describe("AuthRoutes - refresh", () => {
       .mockResolvedValueOnce("new-access")
       .mockResolvedValueOnce("new-refresh");
 
-    const response = await request(app).post("/auth/refresh");
+    const response = await request(app).post("/api/v1/auth/refresh");
 
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({ success: true, token: "new-access" });
@@ -104,7 +104,7 @@ describe("AuthRoutes - refresh", () => {
   it("returns 401 when refresh token is missing", async () => {
     const app = buildApp();
 
-    const response = await request(app).post("/auth/refresh");
+    const response = await request(app).post("/api/v1/auth/refresh");
 
     expect(response.status).toBe(401);
     expect(response.body).toMatchObject({ success: false, message: "Refresh token is required" });
@@ -118,7 +118,7 @@ describe("AuthRoutes - refresh", () => {
 
     securityServiceMock.verifyToken.mockRejectedValueOnce(new InvalidTokenError());
 
-    const response = await request(app).post("/auth/refresh");
+    const response = await request(app).post("/api/v1/auth/refresh");
 
     expect(response.status).toBe(500);
     expect(response.body).toMatchObject({ success: false, message: "Internal server error" });
@@ -136,7 +136,7 @@ describe("AuthRoutes - refresh", () => {
     });
     securityServiceMock.generateToken.mockRejectedValueOnce(new Error("signing failed"));
 
-    const response = await request(app).post("/auth/refresh");
+    const response = await request(app).post("/api/v1/auth/refresh");
 
     expect(response.status).toBe(500);
     expect(response.body).toMatchObject({ success: false, message: "Internal server error" });

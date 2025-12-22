@@ -71,11 +71,11 @@ import { ILogger } from "@src/interfaces/Logger";
 const createTestApp = () => {
   const app = express();
   app.use(express.json());
-  app.use("/auth", AuthRoutes.routes);
+  app.use("/api/v1/auth", AuthRoutes.routes);
   return app;
 };
 
-describe("POST /auth/register", () => {
+describe("POST /api/v1/auth/register", () => {
   let app: ReturnType<typeof createTestApp>;
 
   const { userRepository } = jest.requireMock(
@@ -106,7 +106,7 @@ describe("POST /auth/register", () => {
     userRepository.createUser.mockResolvedValue(user);
     securityService.generateToken.mockResolvedValue("verification-token");
 
-    const response = await request(app).post("/auth/register").send({
+    const response = await request(app).post("/api/v1/auth/register").send({
       name: user.name,
       email: user.email,
       password: "plainPassword123",
@@ -126,7 +126,7 @@ describe("POST /auth/register", () => {
 
   it("returns 400 for invalid payload", async () => {
     const response = await request(app)
-      .post("/auth/register")
+      .post("/api/v1/auth/register")
       .send({ email: "invalid" });
 
     expect(response.status).toBe(400);
@@ -140,7 +140,7 @@ describe("POST /auth/register", () => {
     securityService.hashPassword.mockResolvedValue("hashed-password");
     userRepository.createUser.mockRejectedValue(new Error("db error"));
 
-    const response = await request(app).post("/auth/register").send({
+    const response = await request(app).post("/api/v1/auth/register").send({
       name: "Test User",
       email: "test@example.com",
       password: "plainPassword123",

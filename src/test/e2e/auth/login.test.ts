@@ -62,11 +62,11 @@ import { REFRESH_TOKEN_COOKIE_NAME } from "@src/shared/constants";
 const createTestApp = () => {
   const app = express();
   app.use(express.json());
-  app.use("/auth", AuthRoutes.routes);
+  app.use("/api/v1/auth", AuthRoutes.routes);
   return app;
 };
 
-describe("POST /auth/login", () => {
+describe("POST /api/v1/auth/login", () => {
   let app: ReturnType<typeof createTestApp>;
 
   const { userRepository } = jest.requireMock(
@@ -95,7 +95,7 @@ describe("POST /auth/login", () => {
       .mockResolvedValueOnce("access-token")
       .mockResolvedValueOnce("refresh-token");
 
-    const res = await request(app).post("/auth/login").send({
+    const res = await request(app).post("/api/v1/auth/login").send({
       email: "test@test.com",
       password: "12345678",
     });
@@ -119,7 +119,7 @@ describe("POST /auth/login", () => {
   it("returns 400 if user does not exist", async () => {
     userRepository.getUserByEmail.mockResolvedValue(null);
 
-    const res = await request(app).post("/auth/login").send({
+    const res = await request(app).post("/api/v1/auth/login").send({
       email: "notfound@test.com",
       password: "12345678",
     });
@@ -137,7 +137,7 @@ describe("POST /auth/login", () => {
 
     securityService.verifyPassword.mockResolvedValue(false);
 
-    const res = await request(app).post("/auth/login").send({
+    const res = await request(app).post("/api/v1/auth/login").send({
       email: "test@test.com",
       password: "wrong",
     });
@@ -155,7 +155,7 @@ describe("POST /auth/login", () => {
 
     securityService.verifyPassword.mockResolvedValue(true);
 
-    const res = await request(app).post("/auth/login").send({
+    const res = await request(app).post("/api/v1/auth/login").send({
       email: "test@test.com",
       password: "12345678",
     });
@@ -166,7 +166,7 @@ describe("POST /auth/login", () => {
   it("returns 500 on unexpected error", async () => {
     userRepository.getUserByEmail.mockRejectedValue(new Error("DB ERROR"));
 
-    const res = await request(app).post("/auth/login").send({
+    const res = await request(app).post("/api/v1/auth/login").send({
       email: "test@test.com",
       password: "12345678",
     });

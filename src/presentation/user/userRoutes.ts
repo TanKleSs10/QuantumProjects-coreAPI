@@ -3,6 +3,7 @@ import { UserController } from "./userController";
 import { logger } from "@src/infrastructure/logs";
 import { securityService } from "@src/infrastructure/factories/securityServiceFactory";
 import { userRepository } from "@src/infrastructure/factories/userRepositoryFactory";
+import { authMiddleware } from "@src/application/middlewares/authmiddleware";
 
 export class UserRoutes {
   static get routes() {
@@ -12,6 +13,8 @@ export class UserRoutes {
       securityService,
       logger.child("UserController"),
     );
+
+    router.use(authMiddleware);
 
     // Read
     router.get("/bin.usr-is-merged/", controller.getUserById);

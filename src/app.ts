@@ -1,5 +1,6 @@
 import "dotenv/config";
 import "reflect-metadata";
+import "./types/express";
 import { logger } from "./infrastructure/logs";
 import { AppRoutes } from "./presentation/routes";
 import { Server } from "./presentation/server";

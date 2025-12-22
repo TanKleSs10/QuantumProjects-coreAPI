@@ -64,7 +64,7 @@ const buildApp = () => {
   const app = express();
   app.use(express.json());
   (app.request as any).cookies = {};
-  app.use("/auth", AuthRoutes.routes);
+  app.use("/api/v1/auth", AuthRoutes.routes);
   return app;
 };
 
@@ -87,7 +87,7 @@ describe("AuthRoutes - verify-email", () => {
     userRepositoryMock.getUserById.mockResolvedValueOnce(user);
     userRepositoryMock.verifyUser.mockResolvedValueOnce({ ...user, isVerified: true });
 
-    const response = await request(app).get("/auth/verify-email/valid-token");
+    const response = await request(app).get("/api/v1/auth/verify-email/valid-token");
 
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
@@ -109,7 +109,7 @@ describe("AuthRoutes - verify-email", () => {
     securityServiceMock.verifyToken.mockResolvedValueOnce({ id: user.id });
     userRepositoryMock.getUserById.mockResolvedValueOnce(user);
 
-    const response = await request(app).get("/auth/verify-email/already-verified");
+    const response = await request(app).get("/api/v1/auth/verify-email/already-verified");
 
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
@@ -124,7 +124,7 @@ describe("AuthRoutes - verify-email", () => {
 
     securityServiceMock.verifyToken.mockResolvedValueOnce(null);
 
-    const response = await request(app).get("/auth/verify-email/invalid");
+    const response = await request(app).get("/api/v1/auth/verify-email/invalid");
 
     expect(response.status).toBe(401);
     expect(response.body).toMatchObject({ success: false, message: "Token is invalid" });
@@ -136,7 +136,7 @@ describe("AuthRoutes - verify-email", () => {
     securityServiceMock.verifyToken.mockResolvedValueOnce({ id: "missing" });
     userRepositoryMock.getUserById.mockResolvedValueOnce(null);
 
-    const response = await request(app).get("/auth/verify-email/unknown");
+    const response = await request(app).get("/api/v1/auth/verify-email/unknown");
 
     expect(response.status).toBe(400);
     expect(response.body).toMatchObject({ success: false, message: "User not found" });
@@ -148,7 +148,7 @@ describe("AuthRoutes - verify-email", () => {
     securityServiceMock.verifyToken.mockResolvedValueOnce({ id: "user-3" });
     userRepositoryMock.getUserById.mockRejectedValueOnce(new Error("db down"));
 
-    const response = await request(app).get("/auth/verify-email/error");
+    const response = await request(app).get("/api/v1/auth/verify-email/error");
 
     expect(response.status).toBe(500);
     expect(response.body).toMatchObject({ success: false, message: "Internal server error" });

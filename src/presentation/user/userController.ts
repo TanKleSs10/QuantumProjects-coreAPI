@@ -149,11 +149,11 @@ export class UserController {
 
   deleteUser = async (req: Request, res: Response) => {
     try {
-      const userId = req.params.id;
+      const userId = req.userId;
       if (!userId) {
         return res
-          .status(400)
-          .json({ success: false, message: "User ID is required" });
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
       }
       await new DeleteUserUseCase(this.userRepository, this.logger).execute(
         userId,

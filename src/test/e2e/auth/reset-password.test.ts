@@ -78,7 +78,7 @@ const buildApp = () => {
   const app = express();
   app.use(express.json());
   (app.request as any).cookies = {};
-  app.use("/auth", AuthRoutes.routes);
+  app.use("/api/v1/auth", AuthRoutes.routes);
   return app;
 };
 
@@ -107,7 +107,7 @@ describe("AuthRoutes - reset-password", () => {
     });
 
     const response = await request(app)
-      .post("/auth/reset-password")
+      .post("/api/v1/auth/reset-password")
       .send({ token: "valid", password: "newPassword123" });
 
     expect(response.status).toBe(200);
@@ -121,7 +121,7 @@ describe("AuthRoutes - reset-password", () => {
     const app = buildApp();
 
     const response = await request(app)
-      .post("/auth/reset-password")
+      .post("/api/v1/auth/reset-password")
       .send({ token: "", password: "short" });
 
     expect(response.status).toBe(400);
@@ -134,7 +134,7 @@ describe("AuthRoutes - reset-password", () => {
     securityServiceMock.verifyToken.mockResolvedValueOnce(null);
 
     const response = await request(app)
-      .post("/auth/reset-password")
+      .post("/api/v1/auth/reset-password")
       .send({ token: "invalid", password: "Validpass1" });
 
     expect(response.status).toBe(401);
@@ -151,7 +151,7 @@ describe("AuthRoutes - reset-password", () => {
     userRepositoryMock.getUserById.mockResolvedValueOnce(null);
 
     const response = await request(app)
-      .post("/auth/reset-password")
+      .post("/api/v1/auth/reset-password")
       .send({ token: "valid", password: "Validpass1" });
 
     expect(response.status).toBe(400);
@@ -169,7 +169,7 @@ describe("AuthRoutes - reset-password", () => {
     );
 
     const response = await request(app)
-      .post("/auth/reset-password")
+      .post("/api/v1/auth/reset-password")
       .send({ token: "valid", password: "Validpass1" });
 
     expect(response.status).toBe(500);

@@ -24,7 +24,7 @@ export class Server {
 
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
-    this.app.use(this.routes);
+    this.app.use("/api/v1", this.routes);
   }
 
   public start(): void {

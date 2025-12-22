@@ -54,11 +54,11 @@ import { REFRESH_TOKEN_COOKIE_NAME } from "@src/shared/constants";
 const createTestApp = () => {
   const app = express();
   app.use(express.json());
-  app.use("/auth", AuthRoutes.routes);
+  app.use("/api/v1/auth", AuthRoutes.routes);
   return app;
 };
 
-describe("POST /auth/logout", () => {
+describe("POST /api/v1/auth/logout", () => {
   let app: ReturnType<typeof createTestApp>;
 
   beforeEach(() => {
@@ -68,7 +68,7 @@ describe("POST /auth/logout", () => {
 
   it("returns 200 and clears the refresh token cookie", async () => {
     const response = await request(app)
-      .post("/auth/logout")
+      .post("/api/v1/auth/logout")
       .set("Cookie", [`${REFRESH_TOKEN_COOKIE_NAME}=existing`]);
 
     expect(response.status).toBe(200);
@@ -107,7 +107,7 @@ describe("POST /auth/logout", () => {
       configurable: true,
     });
 
-    const response = await request(app).post("/auth/logout");
+    const response = await request(app).post("/api/v1/auth/logout");
 
     expect(response.status).toBe(500);
 
