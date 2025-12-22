@@ -1,13 +1,6 @@
-import "express-serve-static-core";
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { securityService } from "@src/infrastructure/factories/securityServiceFactory";
-
-declare module "express-serve-static-core" {
-  interface Request {
-    userId?: string;
-  }
-}
 
 export const authMiddleware = async (
   req: Request,

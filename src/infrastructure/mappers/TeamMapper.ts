@@ -6,11 +6,23 @@ export class TeamMapper {
     return new Team(
       raw._id.toString(),
       raw.name,
-      raw.owner,
+      raw.owner?.toString?.() ?? raw.owner,
       raw.members?.map(
-        (m: any) => new TeamMembership(raw._id.toString(), m.user.toString(), m.role),
+        (m: any) => new TeamMembership(m.user?.toString?.() ?? m.user, m.role),
       ) ?? [],
       raw.description,
     );
+  }
+
+  static toPersistence(team: Team): any {
+    return {
+      name: team.name,
+      description: team.description,
+      owner: team.ownerId,
+      members: team.getMembers().map((m) => ({
+        user: m.userId,
+        role: m.role,
+      })),
+    };
   }
 }

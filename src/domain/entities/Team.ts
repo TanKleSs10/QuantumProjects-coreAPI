@@ -1,13 +1,11 @@
 import { TeamMembership } from "./TeamMembership";
-import { User } from "./User";
-
 export class Team {
   private members: TeamMembership[];
 
   constructor(
     public readonly id: string,
     public name: string,
-    public readonly owner: User,
+    public readonly ownerId: string,
     members: TeamMembership[] = [],
     public description?: string,
   ) {
@@ -27,7 +25,7 @@ export class Team {
   }
 
   removeMember(userId: string) {
-    if (this.owner.id === userId) {
+    if (this.ownerId === userId) {
       throw new Error("Owner cannot be removed");
     }
     this.members = this.members.filter((m) => m.userId !== userId);
@@ -36,6 +34,15 @@ export class Team {
   promoteToAdmin(userId: string) {
     const member = this.findMember(userId);
     member.promoteToAdmin();
+  }
+
+  demoteToMember(userId: string) {
+    const member = this.findMember(userId);
+    member.demoteToMember();
+  }
+
+  getMember(userId: string): TeamMembership | undefined {
+    return this.members.find((m) => m.userId === userId);
   }
 
   private findMember(userId: string): TeamMembership {

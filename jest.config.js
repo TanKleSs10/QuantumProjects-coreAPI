@@ -1,1 +1,1 @@
-module.exports = {"preset":"ts-jest","testEnvironment":"node","transform":{"^.+\\\\\\.ts$":["ts-jest",{"tsconfig":"tsconfig.json"}]},"moduleFileExtensions":["ts","js","json"],"moduleNameMapper":{"^@src/(.*)$":"<rootDir>/src/$1"}};
+module.exports = {"preset":"ts-jest","testEnvironment":"node","transform":{"^.+\\\\\\.ts$":["ts-jest",{"tsconfig":"tsconfig.json"}]},"moduleFileExtensions":["ts","js","json"],"moduleNameMapper":{"^@src/(.*)$":"<rootDir>/src/$1"},"testPathIgnorePatterns":["/node_modules/","/src/test/e2e/"]};

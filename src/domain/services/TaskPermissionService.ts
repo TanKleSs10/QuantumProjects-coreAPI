@@ -1,11 +1,11 @@
 import { TeamMembership, TeamRole } from "@src/domain/entities/TeamMembership";
 import { IProjectRepository } from "@src/domain/repositories/IProjectRepository";
 import { ITaskRepository } from "@src/domain/repositories/ITaskRepository";
-import { ITeamMembershipRepository } from "@src/domain/repositories/ITeamMembershipRepository";
+import { ITeamRepository } from "@src/domain/repositories/ITeamRepository";
 
 export class TaskPermissionService {
   constructor(
-    private readonly membershipRepository: ITeamMembershipRepository,
+    private readonly teamRepository: ITeamRepository,
     private readonly projectRepository: IProjectRepository,
     private readonly taskRepository: ITaskRepository,
   ) {}
@@ -20,7 +20,8 @@ export class TaskPermissionService {
   ): Promise<TeamMembership | null> {
     const project = await this.projectRepository.getProjectById(projectId);
     if (!project) return null;
-    return this.membershipRepository.getMembership(project.teamId, userId);
+    const team = await this.teamRepository.getTeamById(project.teamId);
+    return team.getMember(userId) ?? null;
   }
 
   private async isProjectAdmin(userId: string, projectId: string): Promise<boolean> {

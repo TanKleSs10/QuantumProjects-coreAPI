@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
+    "test:e2e": "NODE_OPTIONS= jest --config jest.e2e.config.js",
     "dev": "nodemon",
     "build": "rimraf ./dist && tsc",
     "start": "npm run build && node dist/app.js"
