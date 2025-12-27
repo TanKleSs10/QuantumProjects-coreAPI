@@ -30,6 +30,18 @@ export class MongoProjectDatasource implements IProjectDatasource {
     }
   }
 
+  async getProjectsByTeamId(teamId: string): Promise<Project[]> {
+    try {
+      const projects = await ProjectMongoModel.find({ team: teamId });
+      return projects.map((project) => ProjectMapper.toDomain(project));
+    } catch (error) {
+      if (error instanceof InfrastructureError) throw error;
+      throw new InfrastructureError("Error retrieving projects by team", {
+        cause: error,
+      });
+    }
+  }
+
   async saveProject(project: Project): Promise<Project> {
     try {
       const updated = await ProjectMongoModel.findByIdAndUpdate(

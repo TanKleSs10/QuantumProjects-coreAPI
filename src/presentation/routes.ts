@@ -2,6 +2,7 @@ import { Router } from "express";
 import { UserRoutes } from "./user/userRoutes";
 import { AuthRoutes } from "./auth/authRoutes";
 import { TeamRoutes } from "./team/teamRoutes";
+import { ProjectRoutes } from "./project/projectRoutes";
 
 export class AppRoutes {
   static get router() {
@@ -11,6 +12,7 @@ export class AppRoutes {
 
     router.use("/auth", AuthRoutes.routes);
     router.use("/teams", TeamRoutes.routes);
+    router.use("/projects", ProjectRoutes.routes);
     router.get("/welcome", (_req, res) => {
       res.send("Welcome to the Quantum Projects API!");
     });

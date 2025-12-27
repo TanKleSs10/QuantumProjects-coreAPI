@@ -88,6 +88,29 @@ Documento generado a partir de las rutas y DTOs actuales en el codigo.
 }
 ```
 
+### CreateProjectDTO
+
+```json
+{
+  "name": "string (min 1)",
+  "description": "string (max 1000, opcional)",
+  "tags": "string[] (opcional, default [])",
+  "deadline": "date (opcional, futuro)",
+  "teamId": "string"
+}
+```
+
+### UpdateProjectDTO
+
+```json
+{
+  "name": "string (opcional)",
+  "description": "string (max 1000, opcional)",
+  "tags": "string[] (opcional)",
+  "deadline": "date (opcional, futuro)"
+}
+```
+
 ## Schemas de respuesta
 
 ### User (dominio)
@@ -133,6 +156,21 @@ Documento generado a partir de las rutas y DTOs actuales en el codigo.
       "role": "owner | admin | member"
     }
   ]
+}
+```
+
+### Project (dominio)
+
+```json
+{
+  "id": "string",
+  "name": "string",
+  "teamId": "string",
+  "createdBy": "string",
+  "status": "active | paused | completed | archived",
+  "description": "string | undefined",
+  "tags": "string[]",
+  "deadline": "string (ISO) | undefined"
 }
 ```
 
@@ -511,6 +549,154 @@ Degrada a member.
 ```bash
 curl -X PATCH http://localhost:3000/api/v1/teams/<teamId>/members/<userId>/demote \
   -H "Authorization: Bearer <access_token>"
+```
+
+### Projects
+
+Permisos:
+
+- Solo owner/admin del team pueden crear, actualizar, cambiar estado o eliminar.
+- Cualquier miembro del team puede ver un proyecto por id.
+
+#### POST /projects/
+
+Crea un proyecto (requiere auth).
+
+- Headers: `Authorization: Bearer <access_token>`
+- Body: `CreateProjectDTO`
+- Response 201:
+
+```json
+{ "success": true, "data": { "...": "Project" } }
+```
+
+- Curl:
+
+```bash
+curl -X POST http://localhost:3000/api/v1/projects/ \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Project Alpha",
+    "description": "Proyecto inicial",
+    "teamId": "<teamId>",
+    "tags": ["core", "mvp"]
+  }'
+```
+
+#### GET /projects/:id
+
+Obtiene un proyecto por id (solo miembros del team).
+
+- Params: `id`
+- Response 200:
+
+```json
+{ "success": true, "data": { "...": "Project" } }
+```
+
+- Curl:
+
+```bash
+curl http://localhost:3000/api/v1/projects/<projectId> \
+  -H "Authorization: Bearer <access_token>"
+```
+
+#### GET /projects?teamId=:teamId
+
+Lista proyectos por team (solo miembros del team).
+
+- Query: `teamId`
+- Response 200:
+
+```json
+{ "success": true, "data": [{ "...": "Project" }] }
+```
+
+- Curl:
+
+```bash
+curl "http://localhost:3000/api/v1/projects?teamId=<teamId>" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+#### PUT /projects/:id
+
+Actualiza un proyecto (solo owner/admin).
+
+- Params: `id`
+- Body: `UpdateProjectDTO`
+- Response 200:
+
+```json
+{ "success": true, "data": { "...": "Project" } }
+```
+
+- Curl:
+
+```bash
+curl -X PUT http://localhost:3000/api/v1/projects/<projectId> \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Project Beta",
+    "deadline": "2026-01-01T00:00:00.000Z"
+  }'
+```
+
+#### PATCH /projects/:id/pause
+
+Pausa un proyecto (solo owner/admin).
+
+- Params: `id`
+- Response 200:
+
+```json
+{ "success": true, "data": { "...": "Project" } }
+```
+
+#### PATCH /projects/:id/resume
+
+Reanuda un proyecto (solo owner/admin).
+
+- Params: `id`
+- Response 200:
+
+```json
+{ "success": true, "data": { "...": "Project" } }
+```
+
+#### PATCH /projects/:id/complete
+
+Completa un proyecto (solo owner/admin).
+
+- Params: `id`
+- Response 200:
+
+```json
+{ "success": true, "data": { "...": "Project" } }
+```
+
+#### PATCH /projects/:id/archive
+
+Archiva un proyecto (solo owner/admin).
+
+- Params: `id`
+- Response 200:
+
+```json
+{ "success": true, "data": { "...": "Project" } }
+```
+
+#### DELETE /projects/:id
+
+Elimina un proyecto (solo owner/admin).
+
+- Params: `id`
+- Response 200:
+
+```json
+{ "success": true, "message": "Project deleted successfully" }
 ```
 
 ### Misc

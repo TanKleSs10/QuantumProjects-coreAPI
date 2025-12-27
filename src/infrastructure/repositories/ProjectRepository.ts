@@ -15,6 +15,10 @@ export class ProjectRepository implements IProjectRepository {
     return this.projectDatasource.getProjectById(projectId);
   }
 
+  async getProjectsByTeamId(teamId: string): Promise<Project[]> {
+    return this.projectDatasource.getProjectsByTeamId(teamId);
+  }
+
   async saveProject(project: Project): Promise<Project> {
     return this.projectDatasource.saveProject(project);
   }
