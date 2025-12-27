@@ -1,4 +1,5 @@
 import { TeamMembership } from "./TeamMembership";
+
 export class Team {
   private members: TeamMembership[];
 

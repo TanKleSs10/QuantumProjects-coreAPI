@@ -1,9 +1,8 @@
+import { Project } from "../entities/Project";
 
-import { Project } from "@src/domain/entities/Project";
-
-export interface IProjectRepository {
-  getProjectById(projectId: string): Promise<Project | null>;
+export interface IProjectDatasource {
   createProject(project: Project): Promise<Project>;
+  getProjectById(projectId: string): Promise<Project | null>;
   saveProject(project: Project): Promise<Project>;
   deleteProject(projectId: string): Promise<void>;
 }

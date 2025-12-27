@@ -1,28 +1,32 @@
+import { Types } from "mongoose";
+import { DocumentType } from "@typegoose/typegoose";
 import { Team } from "@src/domain/entities/Team";
 import { TeamMembership } from "@src/domain/entities/TeamMembership";
+import { TeamModel } from "@src/infrastructure/database/models/TeamModel";
 
 export class TeamMapper {
-  static toDomain(raw: any): Team {
+  static toDomain(model: DocumentType<TeamModel>): Team {
     return new Team(
-      raw._id.toString(),
-      raw.name,
-      raw.owner?.toString?.() ?? raw.owner,
-      raw.members?.map(
-        (m: any) => new TeamMembership(m.user?.toString?.() ?? m.user, m.role),
+      model._id.toString(),
+      model.name,
+      model.owner.toString(),
+      model.members?.map(
+        (m) => new TeamMembership(m.user.toString(), m.role),
       ) ?? [],
-      raw.description,
+      model.description,
     );
   }
 
-  static toPersistence(team: Team): any {
+  static toPersistence(team: Team): Partial<TeamModel> {
     return {
       name: team.name,
       description: team.description,
-      owner: team.ownerId,
+      owner: new Types.ObjectId(team.ownerId),
       members: team.getMembers().map((m) => ({
-        user: m.userId,
+        user: new Types.ObjectId(m.userId),
         role: m.role,
       })),
     };
   }
 }
+

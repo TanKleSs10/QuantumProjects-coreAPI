@@ -1,9 +1,18 @@
 import { getModelForClass, modelOptions, prop, Ref } from "@typegoose/typegoose";
-import { TaskState, TaskStates } from "@src/domain/entities/Task";
 import type { ProjectModel } from "@src/infrastructure/database/models/ProjectModel";
 import type { UserModel } from "@src/infrastructure/database/models/UserModel";
 
-@modelOptions({ schemaOptions: { timestamps: true, collection: "tasks" }, options: { customName: "Task" } })
+enum TaskState {
+  TODO = "todo",
+  IN_PROGRESS = "in_progress",
+  BLOCKED = "blocked",
+  DONE = "done",
+}
+
+@modelOptions({
+  schemaOptions: { timestamps: true, collection: "tasks" },
+  options: { customName: "Task" },
+})
 export class TaskModel {
   @prop({ required: true, trim: true })
   public title!: string;
@@ -11,8 +20,8 @@ export class TaskModel {
   @prop({ trim: true })
   public description?: string;
 
-  @prop({ ref: "User", type: () => [String], default: [] })
-  public assignedToIds!: Ref<UserModel>[];
+  @prop({ ref: "User", default: [] })
+  public assignedTo!: Ref<UserModel>[];
 
   @prop({ ref: "User", required: true })
   public createdBy!: Ref<UserModel>;
@@ -20,7 +29,12 @@ export class TaskModel {
   @prop({ ref: "Project", required: true, index: true })
   public project!: Ref<ProjectModel>;
 
-  @prop({ enum: TaskStates, type: () => String, default: "todo", index: true })
+  @prop({
+    enum: TaskState,
+    type: () => String,
+    default: TaskState.TODO,
+    index: true,
+  })
   public state!: TaskState;
 }
 

@@ -1,56 +1,50 @@
-/**
- * Enumerates the states a project can assume within the workspace.
- */
-export enum ProjectStatus {
-  ACTIVE = "active",
-  ARCHIVED = "archived",
-  COMPLETED = "completed",
-}
+import { ProjectStatus } from "@src/infrastructure/database/models/ProjectModel";
 
-/**
- * Properties required to create a {@link Project} domain entity.
- */
-export interface ProjectProps {
-  id: string;
-  name: string;
-  description?: string;
-  createdBy: string;
-  teamId: string;
-  taskIds?: string[];
-  status?: ProjectStatus;
-  tags?: string[];
-  deadline?: Date | null;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-/**
- * Domain representation of a project that groups tasks and teams.
- */
 export class Project {
-  public readonly id: string;
-  public name: string;
-  public description?: string;
-  public createdBy: string;
-  public teamId: string;
-  public taskIds: string[];
-  public status: ProjectStatus;
-  public tags: string[];
-  public deadline?: Date | null;
-  public readonly createdAt?: Date;
-  public readonly updatedAt?: Date;
+  constructor(
+    public readonly id: string,
+    public name: string,
+    public readonly teamId: string,
+    public readonly createdBy: string,
+    public status: ProjectStatus = ProjectStatus.ACTIVE,
+    public description?: string,
+    public tags: string[] = [],
+    public deadline?: Date,
+  ) { }
 
-  constructor(props: ProjectProps) {
-    this.id = props.id;
-    this.name = props.name;
-    this.description = props.description;
-    this.createdBy = props.createdBy;
-    this.teamId = props.teamId;
-    this.taskIds = props.taskIds ?? [];
-    this.status = props.status ?? ProjectStatus.ACTIVE;
-    this.tags = props.tags ?? [];
-    this.deadline = props.deadline;
-    this.createdAt = props.createdAt;
-    this.updatedAt = props.updatedAt;
+  pause() {
+    if (this.status !== ProjectStatus.ACTIVE) {
+      throw new Error("Only active projects can be paused");
+    }
+    this.status = ProjectStatus.PAUSED;
+  }
+
+  resume() {
+    if (this.status !== ProjectStatus.PAUSED) {
+      throw new Error("Only paused projects can be resumed");
+    }
+    this.status = ProjectStatus.ACTIVE;
+  }
+
+  complete() {
+    if (this.status === ProjectStatus.COMPLETED) {
+      throw new Error("Project already completed");
+    }
+    this.status = ProjectStatus.COMPLETED;
+  }
+
+  archive() {
+    if (this.status !== ProjectStatus.COMPLETED) {
+      throw new Error("Only completed projects can be archived");
+    }
+    this.status = ProjectStatus.ARCHIVED;
+  }
+
+  rename(name: string) {
+    if (!name.trim()) {
+      throw new Error("Project name cannot be empty");
+    }
+    this.name = name;
   }
 }
+
