@@ -9,10 +9,6 @@ import { CreateUserSchema } from "./CreateUserDTO";
  */
 export const UpdateUserSchema = CreateUserSchema.partial().extend({
   email: z.email("Email must be a valid email address").optional(),
-  password: z
-    .string()
-    .min(8, "Password must contain at least 8 characters")
-    .optional(),
 });
 
 /**

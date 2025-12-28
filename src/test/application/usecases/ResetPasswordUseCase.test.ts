@@ -2,6 +2,14 @@ import { ResetPasswordUseCase } from "@src/application/usecases/auth/ResetPasswo
 import { DomainError } from "@src/shared/errors/DomainError";
 import { InvalidTokenError } from "@src/shared/errors/InvalidTokenError";
 
+jest.mock("@src/infrastructure/factories/lockoutServiceFactory", () => ({
+  lockoutService: {
+    isLocked: jest.fn(),
+    registerFail: jest.fn(),
+    clear: jest.fn(),
+  },
+}));
+
 const baseUser = {
   id: "user-id",
   name: "Test User",

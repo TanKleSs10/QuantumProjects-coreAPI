@@ -7,14 +7,13 @@ import { Server } from "./presentation/server";
 import { envs } from "./config/envs";
 import { MongoConfig } from "./infrastructure/database/mongo/config";
 
-// This part will run only in the actual application, not in tests if we mock it.
-(async () => {
+const startServer = async () => {
   const database = new MongoConfig({
     mongoUri: envs.URI_DB,
     logger: logger.child("MongoConfig"),
   });
   await database.connect();
-})();
+};
 
 const server = new Server({
   port: envs.PORT,
@@ -22,9 +21,15 @@ const server = new Server({
   Logger: logger.child("Server"),
 });
 
-// Start the server in the main application
-if (process.env.NODE_ENV !== 'test') {
-  server.start();
+if (process.env.NODE_ENV !== "test") {
+  startServer()
+    .then(() => server.start())
+    .catch((error) => {
+      logger.error("Failed to start server", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      process.exit(1);
+    });
 }
 
 // Export the app for testing

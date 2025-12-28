@@ -60,6 +60,7 @@ describe("CreateUserUseCase", () => {
     });
     expect(mockSecurityService.generateToken).toHaveBeenCalledWith(
       { id: createdUser.id },
+      "verify",
       "1h",
     );
     expect(mockEmailService.sendVerificationEmail).toHaveBeenCalledWith(

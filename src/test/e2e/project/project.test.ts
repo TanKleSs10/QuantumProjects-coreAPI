@@ -65,8 +65,11 @@ const createTestApp = () => {
   return app;
 };
 
+const PROJECT_ID = "507f1f77bcf86cd799439011";
+const TEAM_ID = "507f1f77bcf86cd799439012";
+
 const buildTeam = () => ({
-  id: "team-1",
+  id: TEAM_ID,
   ownerId: "user-1",
   getMember: jest.fn(),
 });
@@ -94,7 +97,7 @@ describe("Project endpoints", () => {
   it("creates a project", async () => {
     projectRepository.createProject.mockImplementation(async (project: Project) => {
       return new Project(
-        "proj-1",
+        PROJECT_ID,
         project.name,
         project.teamId,
         project.createdBy,
@@ -108,12 +111,12 @@ describe("Project endpoints", () => {
     const res = await agent.post("/api/v1/projects").send({
       name: "Project Alpha",
       description: "Test project",
-      teamId: "team-1",
+      teamId: TEAM_ID,
     });
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.id).toBe("proj-1");
+    expect(res.body.data.id).toBe(PROJECT_ID);
   });
 
   it("rejects invalid create payload", async () => {
@@ -123,21 +126,21 @@ describe("Project endpoints", () => {
 
   it("gets a project by id", async () => {
     projectRepository.getProjectById.mockResolvedValue(
-      new Project("proj-1", "Project Alpha", "team-1", "user-1"),
+      new Project(PROJECT_ID, "Project Alpha", TEAM_ID, "user-1"),
     );
 
-    const res = await agent.get("/api/v1/projects/proj-1");
+    const res = await agent.get(`/api/v1/projects/${PROJECT_ID}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.id).toBe("proj-1");
+    expect(res.body.data.id).toBe(PROJECT_ID);
   });
 
   it("updates a project", async () => {
     projectRepository.getProjectById.mockResolvedValue(
-      new Project("proj-1", "Project Alpha", "team-1", "user-1"),
+      new Project(PROJECT_ID, "Project Alpha", TEAM_ID, "user-1"),
     );
 
-    const res = await agent.put("/api/v1/projects/proj-1").send({
+    const res = await agent.put(`/api/v1/projects/${PROJECT_ID}`).send({
       name: "Project Beta",
     });
 
@@ -147,21 +150,21 @@ describe("Project endpoints", () => {
 
   it("pauses a project", async () => {
     projectRepository.getProjectById.mockResolvedValue(
-      new Project("proj-1", "Project Alpha", "team-1", "user-1"),
+      new Project(PROJECT_ID, "Project Alpha", TEAM_ID, "user-1"),
     );
 
-    const res = await agent.patch("/api/v1/projects/proj-1/pause");
+    const res = await agent.patch(`/api/v1/projects/${PROJECT_ID}/pause`);
 
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe(ProjectStatus.PAUSED);
   });
 
   it("resumes a project", async () => {
-    const project = new Project("proj-1", "Project Alpha", "team-1", "user-1");
+    const project = new Project(PROJECT_ID, "Project Alpha", TEAM_ID, "user-1");
     project.status = ProjectStatus.PAUSED;
     projectRepository.getProjectById.mockResolvedValue(project);
 
-    const res = await agent.patch("/api/v1/projects/proj-1/resume");
+    const res = await agent.patch(`/api/v1/projects/${PROJECT_ID}/resume`);
 
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe(ProjectStatus.ACTIVE);
@@ -169,21 +172,21 @@ describe("Project endpoints", () => {
 
   it("completes a project", async () => {
     projectRepository.getProjectById.mockResolvedValue(
-      new Project("proj-1", "Project Alpha", "team-1", "user-1"),
+      new Project(PROJECT_ID, "Project Alpha", TEAM_ID, "user-1"),
     );
 
-    const res = await agent.patch("/api/v1/projects/proj-1/complete");
+    const res = await agent.patch(`/api/v1/projects/${PROJECT_ID}/complete`);
 
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe(ProjectStatus.COMPLETED);
   });
 
   it("archives a project", async () => {
-    const project = new Project("proj-1", "Project Alpha", "team-1", "user-1");
+    const project = new Project(PROJECT_ID, "Project Alpha", TEAM_ID, "user-1");
     project.status = ProjectStatus.COMPLETED;
     projectRepository.getProjectById.mockResolvedValue(project);
 
-    const res = await agent.patch("/api/v1/projects/proj-1/archive");
+    const res = await agent.patch(`/api/v1/projects/${PROJECT_ID}/archive`);
 
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe(ProjectStatus.ARCHIVED);
@@ -191,10 +194,10 @@ describe("Project endpoints", () => {
 
   it("deletes a project", async () => {
     projectRepository.getProjectById.mockResolvedValue(
-      new Project("proj-1", "Project Alpha", "team-1", "user-1"),
+      new Project(PROJECT_ID, "Project Alpha", TEAM_ID, "user-1"),
     );
 
-    const res = await agent.delete("/api/v1/projects/proj-1");
+    const res = await agent.delete(`/api/v1/projects/${PROJECT_ID}`);
 
     expect(res.status).toBe(200);
     expect(res.body.message).toBe("Project deleted successfully");

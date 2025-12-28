@@ -64,6 +64,14 @@ jest.mock("@src/infrastructure/factories/userRepositoryFactory", () => ({
   userRepository: userRepositoryMock,
 }));
 
+jest.mock("@src/infrastructure/factories/lockoutServiceFactory", () => ({
+  lockoutService: {
+    isLocked: jest.fn().mockReturnValue(false),
+    registerFail: jest.fn(),
+    clear: jest.fn(),
+  },
+}));
+
 /**
  * Imports AFTER mocks
  */

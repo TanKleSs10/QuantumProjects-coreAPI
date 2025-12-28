@@ -1,4 +1,5 @@
 import { CreateUserDTO } from "@src/domain/dtos/CreateUserDTO";
+import { UpdateUserDTO } from "@src/domain/dtos/UpdateUserDTO";
 import { User } from "@src/domain/entities/User";
 import { IUserRepository } from "@src/domain/repositories/IUserRepository";
 import { ISecurityService } from "@src/domain/services/ISecurityService";
@@ -7,7 +8,7 @@ import { ApplicationError } from "@src/shared/errors/ApplicationError";
 import { ILogger } from "@src/interfaces/Logger";
 
 export interface IUpdateUserUseCase {
-  execute(id: string, data: Partial<CreateUserDTO>): Promise<User>;
+  execute(id: string, data: UpdateUserDTO): Promise<User>;
 }
 
 export class UpdateUserUseCase implements IUpdateUserUseCase {
@@ -19,27 +20,21 @@ export class UpdateUserUseCase implements IUpdateUserUseCase {
     this.logger = logger.child("UpdateUserUseCase");
   }
 
-  async execute(id: string, data: Partial<CreateUserDTO>): Promise<User> {
+  async execute(id: string, data: UpdateUserDTO): Promise<User> {
     try {
       this.logger.debug("Updating user", { userId: id, data });
 
-      const updatePayload: Partial<CreateUserDTO> = { ...data };
-
-      // 🔐 Si viene contraseña → hashear antes de guardar
-      if (data.password) {
-        this.logger.debug("Hashing new password for user", { userId: id });
-
-        const hashedPassword = await this.securityService.hashPassword(
-          data.password,
-        );
-
-        updatePayload.password = hashedPassword;
+      if ("password" in data) {
+        this.logger.warn("Password updates must use ChangePassUseCase", {
+          userId: id,
+        });
+        throw new DomainError("Password updates are not allowed here");
       }
 
       // 🗄 Actualizar usuario en el repositorio
       const updatedUser = await this.userRepository.updateUser(
         id,
-        updatePayload,
+        data as Partial<CreateUserDTO>,
       );
 
       if (!updatedUser) {

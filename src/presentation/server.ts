@@ -1,6 +1,11 @@
 import { ILogger } from "@src/interfaces/Logger";
+import cookieParser from "cookie-parser";
 import express, { Router, type Application } from "express";
+import helmet from "helmet";
+import cors from "cors";
 import http from "node:http";
+import { envs } from "@src/config/envs";
+import { errorHandler } from "@src/presentation/middlewares/errorHandler";
 
 interface ServerConfig {
   port: number;
@@ -24,7 +29,14 @@ export class Server {
 
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
+    this.app.use(cookieParser());
+    this.app.use(helmet());
+    this.app.use(cors({
+      origin: envs.FRONTEND_URL,
+      credentials: envs.CORS_CREDENTIALS,
+    }));
     this.app.use("/api/v1", this.routes);
+    this.app.use(errorHandler);
   }
 
   public start(): void {

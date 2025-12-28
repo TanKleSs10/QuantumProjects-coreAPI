@@ -1,4 +1,6 @@
+import { TokenType } from "@src/types/tokenType";
+
 export interface ITokenAdapter {
-  generateToken(payload: object, expiresIn?: string): string;
-  verifyToken<T = object>(token: string): T;
+  generateToken(payload: object, type: TokenType, expiresIn?: string): string;
+  verifyToken<T = object>(token: string, type: TokenType): T;
 }

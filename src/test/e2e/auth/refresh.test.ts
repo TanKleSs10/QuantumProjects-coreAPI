@@ -1,3 +1,4 @@
+import cookieParser from "cookie-parser";
 import express from "express";
 import request from "supertest";
 import { InvalidTokenError } from "@src/shared/errors/InvalidTokenError";
@@ -64,7 +65,7 @@ import { AuthRoutes } from "@src/presentation/auth/authRoutes";
 const buildApp = () => {
   const app = express();
   app.use(express.json());
-  (app.request as any).cookies = {};
+  app.use(cookieParser());
   app.use("/api/v1/auth", AuthRoutes.routes);
   return app;
 };
@@ -76,10 +77,6 @@ describe("AuthRoutes - refresh", () => {
 
   it("returns 200 and rotates tokens when refresh token is valid", async () => {
     const app = buildApp();
-    Object.assign(app.request, {
-      cookies: { [REFRESH_TOKEN_COOKIE_NAME]: "valid-refresh" },
-    });
-
     securityServiceMock.verifyToken.mockResolvedValueOnce({
       id: "user-1",
       type: "refresh",
@@ -88,7 +85,9 @@ describe("AuthRoutes - refresh", () => {
       .mockResolvedValueOnce("new-access")
       .mockResolvedValueOnce("new-refresh");
 
-    const response = await request(app).post("/api/v1/auth/refresh");
+    const response = await request(app)
+      .post("/api/v1/auth/refresh")
+      .set("Cookie", `${REFRESH_TOKEN_COOKIE_NAME}=valid-refresh`);
 
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({ success: true, token: "new-access" });
@@ -112,13 +111,11 @@ describe("AuthRoutes - refresh", () => {
 
   it("returns 500 when refresh token is invalid", async () => {
     const app = buildApp();
-    Object.assign(app.request, {
-      cookies: { [REFRESH_TOKEN_COOKIE_NAME]: "invalid" },
-    });
-
     securityServiceMock.verifyToken.mockRejectedValueOnce(new InvalidTokenError());
 
-    const response = await request(app).post("/api/v1/auth/refresh");
+    const response = await request(app)
+      .post("/api/v1/auth/refresh")
+      .set("Cookie", `${REFRESH_TOKEN_COOKIE_NAME}=invalid`);
 
     expect(response.status).toBe(500);
     expect(response.body).toMatchObject({ success: false, message: "Internal server error" });
@@ -126,17 +123,15 @@ describe("AuthRoutes - refresh", () => {
 
   it("returns 500 on unexpected generation error", async () => {
     const app = buildApp();
-    Object.assign(app.request, {
-      cookies: { [REFRESH_TOKEN_COOKIE_NAME]: "valid-refresh" },
-    });
-
     securityServiceMock.verifyToken.mockResolvedValueOnce({
       id: "user-1",
       type: "refresh",
     });
     securityServiceMock.generateToken.mockRejectedValueOnce(new Error("signing failed"));
 
-    const response = await request(app).post("/api/v1/auth/refresh");
+    const response = await request(app)
+      .post("/api/v1/auth/refresh")
+      .set("Cookie", `${REFRESH_TOKEN_COOKIE_NAME}=valid-refresh`);
 
     expect(response.status).toBe(500);
     expect(response.body).toMatchObject({ success: false, message: "Internal server error" });

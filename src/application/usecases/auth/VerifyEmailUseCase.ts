@@ -29,7 +29,10 @@ export class VerifyEmailUseCase implements IVerifyEmailUseCase {
     }
 
     const payload =
-      await this.securityService.verifyToken<VerificationPayload>(token);
+      await this.securityService.verifyToken<VerificationPayload>(
+        token,
+        "verify",
+      );
     if (!payload) {
       this.logger.warn("Invalid verification token");
       throw new InvalidTokenError();

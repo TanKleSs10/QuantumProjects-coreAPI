@@ -53,6 +53,14 @@ jest.mock("@src/infrastructure/factories/securityServiceFactory", () => ({
   },
 }));
 
+jest.mock("@src/infrastructure/factories/lockoutServiceFactory", () => ({
+  lockoutService: {
+    isLocked: jest.fn().mockReturnValue(false),
+    registerFail: jest.fn(),
+    clear: jest.fn(),
+  },
+}));
+
 import express from "express";
 import request from "supertest";
 import { AuthRoutes } from "@src/presentation/auth/authRoutes";

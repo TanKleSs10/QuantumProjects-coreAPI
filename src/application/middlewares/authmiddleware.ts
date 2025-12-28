@@ -35,7 +35,7 @@ export const authMiddleware = async (
       payload = await securityService.verifyToken<{
         id: string;
         type: "access";
-      }>(token);
+      }>(token, "access");
     } catch (err) {
       // Si fue un error propio de expiración JWT
       if (err instanceof jwt.TokenExpiredError) {

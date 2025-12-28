@@ -78,6 +78,9 @@ const createTestApp = () => {
   return app;
 };
 
+const PROJECT_ID = "507f1f77bcf86cd799439011";
+const TASK_ID = "507f1f77bcf86cd799439012";
+
 const buildTeam = () => ({
   ownerId: "user-1",
   getMember: jest.fn(),
@@ -103,7 +106,7 @@ describe("Task endpoints", () => {
 
     teamRepository.getTeamById.mockResolvedValue(buildTeam());
     projectRepository.getProjectById.mockResolvedValue(
-      new Project("project-1", "Project", "team-1", "user-1"),
+      new Project(PROJECT_ID, "Project", "team-1", "user-1"),
     );
     taskRepository.saveTask.mockImplementation(async (task: Task) => task);
     taskRepository.listTasksByProject.mockResolvedValue([]);
@@ -112,7 +115,7 @@ describe("Task endpoints", () => {
   it("creates a task", async () => {
     taskRepository.createTask.mockImplementation(async (task: Task) => {
       return new Task({
-        id: "task-1",
+        id: TASK_ID,
         title: task.title,
         description: task.description,
         projectId: task.projectId,
@@ -125,7 +128,7 @@ describe("Task endpoints", () => {
       });
     });
 
-    const res = await agent.post("/api/v1/projects/project-1/tasks").send({
+    const res = await agent.post(`/api/v1/projects/${PROJECT_ID}/tasks`).send({
       title: "Task One",
       priority: "high",
       tags: ["mvp"],
@@ -133,37 +136,37 @@ describe("Task endpoints", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.id).toBe("task-1");
+    expect(res.body.data.id).toBe(TASK_ID);
   });
 
   it("gets a task by id", async () => {
     taskRepository.getTaskById.mockResolvedValue(
       new Task({
-        id: "task-1",
+        id: TASK_ID,
         title: "Task One",
-        projectId: "project-1",
+        projectId: PROJECT_ID,
         createdBy: "user-1",
       }),
     );
 
-    const res = await agent.get("/api/v1/tasks/task-1");
+    const res = await agent.get(`/api/v1/tasks/${TASK_ID}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.id).toBe("task-1");
+    expect(res.body.data.id).toBe(TASK_ID);
   });
 
   it("changes task status", async () => {
     taskRepository.getTaskById.mockResolvedValue(
       new Task({
-        id: "task-1",
+        id: TASK_ID,
         title: "Task One",
-        projectId: "project-1",
+        projectId: PROJECT_ID,
         createdBy: "user-1",
         assigneeId: "user-1",
       }),
     );
 
-    const res = await agent.patch("/api/v1/tasks/task-1/status").send({
+    const res = await agent.patch(`/api/v1/tasks/${TASK_ID}/status`).send({
       status: "in_progress",
     });
 
@@ -174,14 +177,14 @@ describe("Task endpoints", () => {
   it("lists tasks by project", async () => {
     taskRepository.listTasksByProject.mockResolvedValue([
       new Task({
-        id: "task-1",
+        id: TASK_ID,
         title: "Task One",
-        projectId: "project-1",
+        projectId: PROJECT_ID,
         createdBy: "user-1",
       }),
     ]);
 
-    const res = await agent.get("/api/v1/projects/project-1/tasks");
+    const res = await agent.get(`/api/v1/projects/${PROJECT_ID}/tasks`);
 
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(1);

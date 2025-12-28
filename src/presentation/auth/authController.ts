@@ -17,6 +17,10 @@ import { CreateUserSchema } from "@src/domain/dtos/CreateUserDTO";
 import { CreateUserUseCase } from "@src/application/usecases/user/CreateUserUseCase";
 import { REFRESH_TOKEN_COOKIE_NAME } from "@src/shared/constants";
 import { IEmailService } from "@src/domain/services/IEmailService";
+import { ForgotPasswordSchema } from "@src/domain/dtos/ForgotPasswordDTO";
+import { ForgotPasswordUseCase } from "@src/application/usecases/auth/ForgotPasswordUseCase";
+import { ResendVerificationSchema } from "@src/domain/dtos/ResendVerificationDTO";
+import { ResendVerificationEmailUseCase } from "@src/application/usecases/auth/ResendVerificationEmailUseCase";
 
 const ResetPasswordSchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -119,6 +123,64 @@ export class AuthController {
       });
     } catch (error) {
       this.handleError(res, error);
+    }
+  };
+
+  forgotPassword = async (req: Request, res: Response) => {
+    try {
+      const parsed = ForgotPasswordSchema.safeParse(req.body);
+      if (!parsed.success) {
+        this.logger.warn("Invalid forgot password payload", {
+          issues: parsed.error.message,
+        });
+        return res.status(400).json({
+          success: false,
+          message: parsed.error.issues[0]?.message ?? "Invalid payload",
+        });
+      }
+
+      await new ForgotPasswordUseCase(
+        this.userRepository,
+        this.securityService,
+        this.emailService,
+        this.logger,
+      ).execute(parsed.data.email);
+
+      return res.status(200).json({
+        success: true,
+        message: "If the email exists, a reset link will be sent",
+      });
+    } catch (error) {
+      return this.handleError(res, error);
+    }
+  };
+
+  resendVerification = async (req: Request, res: Response) => {
+    try {
+      const parsed = ResendVerificationSchema.safeParse(req.body);
+      if (!parsed.success) {
+        this.logger.warn("Invalid resend verification payload", {
+          issues: parsed.error.message,
+        });
+        return res.status(400).json({
+          success: false,
+          message: parsed.error.issues[0]?.message ?? "Invalid payload",
+        });
+      }
+
+      await new ResendVerificationEmailUseCase(
+        this.userRepository,
+        this.securityService,
+        this.emailService,
+        this.logger,
+      ).execute(parsed.data.email);
+
+      return res.status(200).json({
+        success: true,
+        message: "If the email exists, a verification link will be sent",
+      });
+    } catch (error) {
+      return this.handleError(res, error);
     }
   };
 

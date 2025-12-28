@@ -4,6 +4,8 @@ import { User } from "@src/domain/entities/User";
 import { ILogger } from "@src/interfaces/Logger";
 import { DomainError } from "@src/shared/errors/DomainError";
 import { InvalidTokenError } from "@src/shared/errors/InvalidTokenError";
+import { ExpiredTokenError } from "@src/shared/errors/ExpiredTokenError";
+import { lockoutService } from "@src/infrastructure/factories/lockoutServiceFactory";
 
 interface ResetPayload {
   id: string;
@@ -28,8 +30,21 @@ export class ResetPasswordUseCase implements IResetPasswordUseCase {
       throw new DomainError("New password is required");
     }
 
-    const payload = await this.securityService.verifyToken<ResetPayload>(token);
+    const lockKey = `reset:${token}`;
+    let payload: ResetPayload | null;
+    try {
+      payload = await this.securityService.verifyToken<ResetPayload>(
+        token,
+        "reset",
+      );
+    } catch (error) {
+      if (error instanceof InvalidTokenError || error instanceof ExpiredTokenError) {
+        lockoutService.registerFail(lockKey);
+      }
+      throw error;
+    }
     if (!payload) {
+      lockoutService.registerFail(lockKey);
       throw new InvalidTokenError();
     }
 
@@ -53,6 +68,7 @@ export class ResetPasswordUseCase implements IResetPasswordUseCase {
     this.logger.info("User password reset successfully", {
       userId: updatedUser.id,
     });
+    lockoutService.clear(lockKey);
     return updatedUser;
   }
 }

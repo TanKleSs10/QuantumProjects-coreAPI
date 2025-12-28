@@ -4,6 +4,7 @@ import { logger } from "@src/infrastructure/logs";
 import { securityService } from "@src/infrastructure/factories/securityServiceFactory";
 import { userRepository } from "@src/infrastructure/factories/userRepositoryFactory";
 import { authMiddleware } from "@src/application/middlewares/authmiddleware";
+import { asyncHandler } from "@src/presentation/middlewares/asyncHandler";
 
 export class UserRoutes {
   static get routes() {
@@ -17,16 +18,16 @@ export class UserRoutes {
     router.use(authMiddleware);
 
     // Read
-    router.get("/bin.usr-is-merged/", controller.getUserById);
+    router.get("/", asyncHandler(controller.getUserById));
 
     // Update
-    router.put("/", controller.updateUser);
+    router.put("/", asyncHandler(controller.updateUser));
 
     // Change Password
-    router.patch("/change-password", controller.changePassword);
+    router.patch("/change-password", asyncHandler(controller.changePassword));
 
     //Delete
-    router.delete("/", controller.deleteUser);
+    router.delete("/", asyncHandler(controller.deleteUser));
 
     return router;
   }

@@ -23,6 +23,7 @@ export class MongoConfig {
       });
     } catch (err) {
       this.logger.error("Error connecting to MongoDB", { error: err });
+      throw err;
     }
   }
 

@@ -1,7 +1,7 @@
 import z from "zod";
 
 export const ChangePassSchema = z.object({
-  userId: z.uuid("User ID must be a valid UUID"),
+  userId: z.string(),
   currentPassword: z
     .string()
     .min(8, "Current password must contain at least 8 characters"),

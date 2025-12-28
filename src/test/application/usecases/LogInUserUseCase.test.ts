@@ -2,6 +2,14 @@ import { LogInUserUseCase } from "@src/application/usecases/auth/LogInUserUseCas
 import { ApplicationError } from "@src/shared/errors/ApplicationError";
 import { DomainError } from "@src/shared/errors/DomainError";
 
+jest.mock("@src/infrastructure/factories/lockoutServiceFactory", () => ({
+  lockoutService: {
+    isLocked: jest.fn(),
+    registerFail: jest.fn(),
+    clear: jest.fn(),
+  },
+}));
+
 describe("LogInUserUseCase", () => {
   const mockRepository = {
     getUserByEmail: jest.fn(),
@@ -35,6 +43,10 @@ describe("LogInUserUseCase", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    const { lockoutService } = jest.requireMock(
+      "@src/infrastructure/factories/lockoutServiceFactory",
+    );
+    lockoutService.isLocked.mockReturnValue(false);
     useCase = new LogInUserUseCase(
       mockRepository as any,
       mockSecurityService as any,

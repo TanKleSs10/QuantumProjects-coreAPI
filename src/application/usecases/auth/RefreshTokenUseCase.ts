@@ -36,6 +36,7 @@ export class RefreshTokenUseCase implements IRefreshTokenUseCase {
       const payload =
         await this.securityService.verifyToken<IRefreshTokenPayload>(
           refreshToken,
+          "refresh",
         );
 
       if (!payload || !payload.id || (payload.type && payload.type !== "refresh")) {
@@ -48,12 +49,14 @@ export class RefreshTokenUseCase implements IRefreshTokenUseCase {
       // 2. Generar nuevo access token
       const newAccessToken = await this.securityService.generateToken(
         { id: userId, type: "access" },
+        "access",
         "15m",
       );
 
       // 3. Rotar refresh token (sin persistencia, MVP)
       const newRefreshToken = await this.securityService.generateToken(
         { id: userId, type: "refresh" },
+        "refresh",
         "7d",
       );
 

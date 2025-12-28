@@ -23,7 +23,7 @@ export const refreshAuthMiddleware = async (
       payload = await securityService.verifyToken<{
         id: string;
         type: "refresh";
-      }>(refreshToken);
+      }>(refreshToken, "refresh");
     } catch (err) {
       if (err instanceof jwt.TokenExpiredError) {
         return res.status(401).json({

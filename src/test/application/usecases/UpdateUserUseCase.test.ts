@@ -16,7 +16,6 @@ describe("UpdateUserUseCase", () => {
   };
 
   const mockSecurityService = {
-    hashPassword: jest.fn(),
   };
 
   const mockChildLogger = {
@@ -42,21 +41,24 @@ describe("UpdateUserUseCase", () => {
   });
 
   it("actualiza contraseña hasheada", async () => {
-    const updatedUser = { ...existingUser, password: "hashed", name: "New" };
-    mockSecurityService.hashPassword.mockResolvedValueOnce("hashed");
+    const updatedUser = { ...existingUser, name: "New" };
     mockRepository.updateUser.mockResolvedValueOnce(updatedUser);
 
     const result = await useCase.execute(existingUser.id, {
       name: "New",
-      password: "plain",
     });
 
     expect(result).toEqual(updatedUser);
-    expect(mockSecurityService.hashPassword).toHaveBeenCalledWith("plain");
     expect(mockRepository.updateUser).toHaveBeenCalledWith(existingUser.id, {
       name: "New",
-      password: "hashed",
     });
+  });
+
+  it("rechaza cambios de password", async () => {
+    await expect(
+      useCase.execute(existingUser.id, { password: "plain" } as any),
+    ).rejects.toThrow(DomainError);
+    expect(mockRepository.updateUser).not.toHaveBeenCalled();
   });
 
   it("usuario no encontrado", async () => {
@@ -71,20 +73,19 @@ describe("UpdateUserUseCase", () => {
   });
 
   it("error inesperado en hashPassword", async () => {
-    mockSecurityService.hashPassword.mockRejectedValueOnce(new Error("hash"));
+    mockRepository.updateUser.mockRejectedValueOnce(new Error("hash"));
 
-    await expect(
-      useCase.execute(existingUser.id, { password: "plain" }),
-    ).rejects.toThrow(ApplicationError);
+    await expect(useCase.execute(existingUser.id, { name: "New" })).rejects.toThrow(
+      ApplicationError,
+    );
     expect(mockChildLogger.error).toHaveBeenCalled();
   });
 
   it("error inesperado del repositorio", async () => {
-    mockSecurityService.hashPassword.mockResolvedValueOnce("hashed");
     mockRepository.updateUser.mockRejectedValueOnce(new Error("db"));
 
     await expect(
-      useCase.execute(existingUser.id, { password: "plain" }),
+      useCase.execute(existingUser.id, { name: "New" }),
     ).rejects.toThrow(ApplicationError);
     expect(mockChildLogger.error).toHaveBeenCalled();
   });

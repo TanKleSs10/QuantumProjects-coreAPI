@@ -58,11 +58,13 @@ describe("RefreshTokenUseCase", () => {
     expect(mockSecurityService.generateToken).toHaveBeenNthCalledWith(
       1,
       { id: "user-id", type: "access" },
+      "access",
       "15m",
     );
     expect(mockSecurityService.generateToken).toHaveBeenNthCalledWith(
       2,
       { id: "user-id", type: "refresh" },
+      "refresh",
       "7d",
     );
   });

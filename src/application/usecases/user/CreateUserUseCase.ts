@@ -22,7 +22,10 @@ export class CreateUserUseCase implements ICreateUserUseCase {
 
   async execute(userData: CreateUserDTO): Promise<User> {
     try {
-      this.logger.debug("Starting user creation process", { userData });
+      const safeUserData = { ...userData, password: "[REDACTED]" };
+      this.logger.debug("Starting user creation process", {
+        userData: safeUserData,
+      });
 
       const passwordHashed = await this.securityService.hashPassword(
         userData.password,
@@ -44,6 +47,7 @@ export class CreateUserUseCase implements ICreateUserUseCase {
       // 📧 3. Generate verification token
       const verificationToken = await this.securityService.generateToken(
         { id: user.id },
+        "verify",
         "1h",
       );
 
