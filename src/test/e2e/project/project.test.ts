@@ -53,18 +53,16 @@ jest.mock("@src/application/middlewares/authmiddleware", () => ({
 
 import express from "express";
 import request from "supertest";
-import type { Server } from "http";
 import { ProjectRoutes } from "@src/presentation/project/projectRoutes";
 import { Project } from "@src/domain/entities/Project";
 import { ProjectStatus } from "@src/infrastructure/database/models/ProjectModel";
 import { ILogger } from "@src/interfaces/Logger";
 
-const createTestServer = () => {
+const createTestApp = () => {
   const app = express();
   app.use(express.json());
   app.use("/api/v1/projects", ProjectRoutes.routes);
-  const server = app.listen(0, "127.0.0.1");
-  return { app, server };
+  return app;
 };
 
 const buildTeam = () => ({
@@ -74,7 +72,6 @@ const buildTeam = () => ({
 });
 
 describe("Project endpoints", () => {
-  let server: Server;
   let agent: ReturnType<typeof request>;
 
   const { projectRepository } = jest.requireMock(
@@ -85,20 +82,13 @@ describe("Project endpoints", () => {
   );
 
   beforeEach(() => {
-    const created = createTestServer();
-    server = created.server;
-    agent = request(server);
+    const app = createTestApp();
+    agent = request(app);
     jest.clearAllMocks();
 
     teamRepository.getTeamById.mockResolvedValue(buildTeam());
     projectRepository.saveProject.mockImplementation(async (project: Project) => project);
     projectRepository.deleteProject.mockResolvedValue(undefined);
-  });
-
-  afterEach(async () => {
-    await new Promise<void>((resolve, reject) => {
-      server.close((err) => (err ? reject(err) : resolve()));
-    });
   });
 
   it("creates a project", async () => {

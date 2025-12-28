@@ -111,6 +111,48 @@ Documento generado a partir de las rutas y DTOs actuales en el codigo.
 }
 ```
 
+### CreateTaskDTO
+
+```json
+{
+  "title": "string (min 1)",
+  "description": "string (opcional)",
+  "status": "todo | in_progress | blocked | done (opcional, default todo)",
+  "priority": "low | medium | high | urgent (opcional, default medium)",
+  "assigneeId": "string (opcional)",
+  "dueDate": "date (opcional)",
+  "tags": "string[] (opcional, default [])"
+}
+```
+
+### UpdateTaskDTO
+
+```json
+{
+  "title": "string (opcional)",
+  "description": "string (opcional)",
+  "priority": "low | medium | high | urgent (opcional)",
+  "dueDate": "date (opcional)",
+  "tags": "string[] (opcional)"
+}
+```
+
+### ChangeTaskStatusDTO
+
+```json
+{
+  "status": "todo | in_progress | blocked | done"
+}
+```
+
+### AssignTaskDTO
+
+```json
+{
+  "assigneeId": "string"
+}
+```
+
 ## Schemas de respuesta
 
 ### User (dominio)
@@ -171,6 +213,23 @@ Documento generado a partir de las rutas y DTOs actuales en el codigo.
   "description": "string | undefined",
   "tags": "string[]",
   "deadline": "string (ISO) | undefined"
+}
+```
+
+### Task (dominio)
+
+```json
+{
+  "id": "string",
+  "title": "string",
+  "description": "string | undefined",
+  "status": "todo | in_progress | blocked | done",
+  "priority": "low | medium | high | urgent",
+  "projectId": "string",
+  "assigneeId": "string | null",
+  "createdBy": "string",
+  "dueDate": "string (ISO) | undefined",
+  "tags": "string[]"
 }
 ```
 
@@ -697,6 +756,86 @@ Elimina un proyecto (solo owner/admin).
 
 ```json
 { "success": true, "message": "Project deleted successfully" }
+```
+
+### Tasks
+
+Permisos:
+
+- Solo owner/admin del team pueden crear o asignar tareas.
+- Owner/admin o assignee pueden actualizar o cambiar estado.
+- Cualquier miembro del team puede ver/listar tareas del proyecto.
+
+#### POST /projects/:projectId/tasks
+
+Crea una tarea dentro del proyecto.
+
+- Headers: `Authorization: Bearer <access_token>`
+- Params: `projectId`
+- Body: `CreateTaskDTO`
+- Response 201:
+
+```json
+{ "success": true, "data": { "...": "Task" } }
+```
+
+#### GET /projects/:projectId/tasks
+
+Lista tareas de un proyecto con filtros opcionales.
+
+- Params: `projectId`
+- Query: `status`, `priority`, `assigneeId`
+- Response 200:
+
+```json
+{ "success": true, "data": [{ "...": "Task" }] }
+```
+
+#### GET /tasks/:taskId
+
+Obtiene una tarea por id.
+
+- Params: `taskId`
+- Response 200:
+
+```json
+{ "success": true, "data": { "...": "Task" } }
+```
+
+#### PATCH /tasks/:taskId
+
+Actualiza datos basicos de una tarea.
+
+- Params: `taskId`
+- Body: `UpdateTaskDTO`
+- Response 200:
+
+```json
+{ "success": true, "data": { "...": "Task" } }
+```
+
+#### PATCH /tasks/:taskId/status
+
+Cambia el estado de una tarea.
+
+- Params: `taskId`
+- Body: `ChangeTaskStatusDTO`
+- Response 200:
+
+```json
+{ "success": true, "data": { "...": "Task" } }
+```
+
+#### PATCH /tasks/:taskId/assign
+
+Asigna una tarea a un miembro del team.
+
+- Params: `taskId`
+- Body: `AssignTaskDTO`
+- Response 200:
+
+```json
+{ "success": true, "data": { "...": "Task" } }
 ```
 
 ### Misc

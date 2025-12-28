@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { TaskState } from "@src/domain/entities/Task";
+import { TaskPriorityValue, TaskPriorityValues } from "@src/domain/value-objects/TaskPriority";
+import { TaskStatusValue, TaskStatusValues } from "@src/domain/value-objects/TaskStatus";
 
 /**
  * Validation schema for creating a new task.
@@ -7,10 +8,11 @@ import { TaskState } from "@src/domain/entities/Task";
 export const CreateTaskSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
   description: z.string().trim().min(1, "Description is required").optional(),
-  createdBy: z.string().min(1, "Creator is required"),
-  assignedToIds: z.array(z.string()).default([]),
-  projectId: z.string().min(1),
-  state: z.enum(["todo", "doing", "done"] as const satisfies readonly TaskState[]).default("todo"),
+  status: z.enum(TaskStatusValues as readonly TaskStatusValue[]).default("todo"),
+  priority: z.enum(TaskPriorityValues as readonly TaskPriorityValue[]).default("medium"),
+  assigneeId: z.string().min(1).optional(),
+  dueDate: z.coerce.date().optional(),
+  tags: z.array(z.string().trim().min(1)).default([]),
 });
 
 /**

@@ -1,4 +1,4 @@
-import { TeamMembership, TeamRole } from "@src/domain/entities/TeamMembership";
+import { TeamRole } from "@src/domain/entities/TeamMembership";
 import { IProjectRepository } from "@src/domain/repositories/IProjectRepository";
 import { ITaskRepository } from "@src/domain/repositories/ITaskRepository";
 import { ITeamRepository } from "@src/domain/repositories/ITeamRepository";
@@ -14,19 +14,25 @@ export class TaskPermissionService {
     return role === "owner" || role === "admin";
   }
 
-  private async getMembershipForProject(
-    userId: string,
-    projectId: string,
-  ): Promise<TeamMembership | null> {
+  private async getTeamForProject(projectId: string) {
     const project = await this.projectRepository.getProjectById(projectId);
     if (!project) return null;
     const team = await this.teamRepository.getTeamById(project.teamId);
-    return team.getMember(userId) ?? null;
+    return team ?? null;
   }
 
   private async isProjectAdmin(userId: string, projectId: string): Promise<boolean> {
-    const membership = await this.getMembershipForProject(userId, projectId);
-    return this.isProjectAdminRole(membership?.role);
+    const team = await this.getTeamForProject(projectId);
+    if (!team) return false;
+    if (team.ownerId === userId) return true;
+    return this.isProjectAdminRole(team.getMember(userId)?.role);
+  }
+
+  private async isTeamMember(userId: string, projectId: string): Promise<boolean> {
+    const team = await this.getTeamForProject(projectId);
+    if (!team) return false;
+    if (team.ownerId === userId) return true;
+    return !!team.getMember(userId);
   }
 
   async canCreateTask(userId: string, projectId: string): Promise<boolean> {
@@ -41,22 +47,24 @@ export class TaskPermissionService {
     const task = await this.taskRepository.getTaskById(taskId);
     if (!task) return false;
 
-    if (task.assignedToIds.includes(userId)) return true;
+    if (task.assigneeId === userId) return true;
 
-    return this.isProjectAdmin(userId, task.projectId);
+    return this.isTeamMember(userId, task.projectId);
   }
 
   async canUpdateTask(userId: string, taskId: string): Promise<boolean> {
     const task = await this.taskRepository.getTaskById(taskId);
     if (!task) return false;
 
-    return task.assignedToIds.includes(userId);
+    if (task.assigneeId === userId) return true;
+    return this.isProjectAdmin(userId, task.projectId);
   }
 
   async canDeleteTask(userId: string, taskId: string): Promise<boolean> {
     const task = await this.taskRepository.getTaskById(taskId);
     if (!task) return false;
 
-    return task.createdBy === userId;
+    if (task.createdBy === userId) return true;
+    return this.isProjectAdmin(userId, task.projectId);
   }
 }

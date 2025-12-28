@@ -166,3 +166,44 @@ Al terminar esta lista tendrás:
 ✔️ Arquitectura limpia
 ✔️ Base sólida para Tasks
 ✔️ Sin deuda técnica
+
+---
+
+## 📌 Extension MVP — Modulo Task
+
+### Dominio
+
+- [x] Entidad `Task` con invariantes (title requerido, status/priority validos)
+- [x] Value objects `TaskStatus` y `TaskPriority`
+- [x] DTOs de Task (create, update, change status, assign, list filters)
+- [x] Eventos `TaskCreated`, `TaskUpdated`, `TaskAssigned`
+- [x] Contratos `ITaskRepository` y `ITaskDatasource`
+
+### Application (Use Cases)
+
+- [x] `CreateTaskUseCase`
+- [x] `UpdateTaskUseCase`
+- [x] `ChangeTaskStatusUseCase`
+- [x] `AssignTaskUseCase`
+- [x] `GetTaskByIdUseCase`
+- [x] `ListTasksByProjectUseCase`
+
+### Infraestructura
+
+- [x] `TaskModel` (Mongoose) con indices por project, status y assignee
+- [x] `TaskMapper` (entity <-> persistence)
+- [x] `MongoTaskDatasource`
+- [x] `TaskRepository`
+- [x] Factory `taskRepositoryFactory`
+
+### Presentation
+
+- [x] Rutas y controlador HTTP para Task
+- [x] Validaciones de request (DTO + schema)
+- [x] Manejo de errores 400/404/409/422
+
+### Integraciones y observabilidad
+
+- [x] Validaciones de pertenencia al team y permisos
+- [x] Emision de eventos con `LoggerEventBus`
+- [x] Logs estructurados en use cases clave
