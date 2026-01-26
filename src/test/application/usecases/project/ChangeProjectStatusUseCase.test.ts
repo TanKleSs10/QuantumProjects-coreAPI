@@ -2,6 +2,7 @@ import { ArchiveProjectUseCase } from "@src/application/usecases/project/Archive
 import { CompleteProjectUseCase } from "@src/application/usecases/project/CompleteProjectUseCase";
 import { PauseProjectUseCase } from "@src/application/usecases/project/PauseProjectUseCase";
 import { ResumeProjectUseCase } from "@src/application/usecases/project/ResumeProjectUseCase";
+import { UnarchiveProjectUseCase } from "@src/application/usecases/project/UnarchiveProjectUseCase";
 import { Project } from "@src/domain/entities/Project";
 import { Team } from "@src/domain/entities/Team";
 import { TeamMembership } from "@src/domain/entities/TeamMembership";
@@ -159,5 +160,38 @@ describe("Project status use cases", () => {
     const result = await useCase.execute("project-id", "owner-id");
 
     expect(result.status).toBe(ProjectStatus.ARCHIVED);
+  });
+
+  it("unarchives an archived project", async () => {
+    const projectRepository = {
+      getProjectById: jest.fn(),
+      saveProject: jest.fn(),
+    };
+    const teamRepository = {
+      getTeamById: jest.fn(),
+    };
+    const logger = createLogger();
+
+    const useCase = new UnarchiveProjectUseCase(
+      projectRepository as any,
+      teamRepository as any,
+      logger as any,
+    );
+
+    const project = new Project(
+      "project-id",
+      "Project",
+      "team-id",
+      "owner-id",
+      ProjectStatus.ARCHIVED,
+    );
+
+    projectRepository.getProjectById.mockResolvedValueOnce(project);
+    teamRepository.getTeamById.mockResolvedValueOnce(createTeam("owner-id"));
+    projectRepository.saveProject.mockResolvedValueOnce(project);
+
+    const result = await useCase.execute("project-id", "owner-id");
+
+    expect(result.status).toBe(ProjectStatus.COMPLETED);
   });
 });

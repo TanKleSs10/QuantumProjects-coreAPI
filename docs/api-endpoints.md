@@ -11,7 +11,7 @@ Documento generado a partir de las rutas y DTOs actuales en el codigo.
 
 - Se usa `Authorization: Bearer <access_token>` para endpoints protegidos.
 - El `refresh_token` se entrega como cookie `refresh_token` (httpOnly).
-- Nota: Los controladores de usuarios y equipos usan `req.userId` y ya estan protegidos por middleware de auth.
+- Nota: Los endpoints bajo `/users`, `/teams`, `/projects` y `/tasks` requieren auth.
 
 ## Formato de respuesta comun
 
@@ -43,6 +43,22 @@ Documento generado a partir de las rutas y DTOs actuales en el codigo.
 {
   "email": "string (email valido)",
   "password": "string (min 8)"
+}
+```
+
+### ForgotPasswordDTO
+
+```json
+{
+  "email": "string (email valido)"
+}
+```
+
+### ResendVerificationDTO
+
+```json
+{
+  "email": "string (email valido)"
 }
 ```
 
@@ -153,6 +169,16 @@ Documento generado a partir de las rutas y DTOs actuales en el codigo.
 }
 ```
 
+### ListTasksByProjectDTO (query)
+
+```json
+{
+  "status": "todo | in_progress | blocked | done (opcional)",
+  "priority": "low | medium | high | urgent (opcional)",
+  "assigneeId": "string (opcional)"
+}
+```
+
 ## Schemas de respuesta
 
 ### User (dominio)
@@ -180,7 +206,8 @@ Documento generado a partir de las rutas y DTOs actuales en el codigo.
 {
   "id": "string",
   "name": "string",
-  "email": "string"
+  "email": "string",
+  "isVerified": "boolean"
 }
 ```
 
@@ -196,6 +223,29 @@ Documento generado a partir de las rutas y DTOs actuales en el codigo.
     {
       "userId": "string",
       "role": "owner | admin | member"
+    }
+  ]
+}
+```
+
+### TeamWithMembers (include=members)
+
+```json
+{
+  "id": "string",
+  "name": "string",
+  "ownerId": "string",
+  "description": "string | undefined",
+  "members": [
+    {
+      "userId": "string",
+      "role": "owner | admin | member",
+      "user": {
+        "id": "string",
+        "name": "string",
+        "email": "string",
+        "avatarUrl": "string | undefined"
+      } | null
     }
   ]
 }
@@ -287,11 +337,60 @@ Verifica el email del usuario.
 curl http://localhost:3000/api/v1/auth/verify-email/<token>
 ```
 
+#### POST /auth/resend-verification
+
+Reenvia el email de verificacion si existe el usuario.
+
+- Body: `ResendVerificationDTO`
+- Response 200:
+
+```json
+{
+  "success": true,
+  "message": "If the email exists, a verification link will be sent"
+}
+```
+
+- Curl:
+
+```bash
+curl -X POST http://localhost:3000/api/v1/auth/resend-verification \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "ada@example.com"
+  }'
+```
+
+#### POST /auth/forgot-password
+
+Solicita email de recuperacion de password.
+
+- Body: `ForgotPasswordDTO`
+- Response 200:
+
+```json
+{
+  "success": true,
+  "message": "If the email exists, a reset link will be sent"
+}
+```
+
+- Curl:
+
+```bash
+curl -X POST http://localhost:3000/api/v1/auth/forgot-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "ada@example.com"
+  }'
+```
+
 #### POST /auth/login
 
 Inicia sesion y entrega access token. El refresh token se setea como cookie.
 
 - Body: `LogInDTO`
+- Rate limit: 10 intentos cada 15 min por IP.
 - Response 200:
 
 ```json
@@ -326,6 +425,7 @@ Actualiza password usando token de recuperacion.
 }
 ```
 
+- Rate limit: 5 intentos cada 15 min por IP.
 - Response 200:
 
 ```json
@@ -380,7 +480,7 @@ curl -X POST http://localhost:3000/api/v1/auth/logout \
 
 ### Users
 
-#### GET /users/me/bin.usr-is-merged/
+#### GET /users/me
 
 Obtiene el usuario actual (requiere auth).
 
@@ -394,11 +494,11 @@ Obtiene el usuario actual (requiere auth).
 - Curl:
 
 ```bash
-curl http://localhost:3000/api/v1/users/me/bin.usr-is-merged/ \
+curl http://localhost:3000/api/v1/users/me \
   -H "Authorization: Bearer <access_token>"
 ```
 
-#### PUT /users/me/
+#### PUT /users/me
 
 Actualiza el usuario actual (requiere auth).
 
@@ -413,7 +513,7 @@ Actualiza el usuario actual (requiere auth).
 - Curl:
 
 ```bash
-curl -X PUT http://localhost:3000/api/v1/users/me/ \
+curl -X PUT http://localhost:3000/api/v1/users/me \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -446,7 +546,7 @@ curl -X PATCH http://localhost:3000/api/v1/users/me/change-password \
   }'
 ```
 
-#### DELETE /users/me/
+#### DELETE /users/me
 
 Elimina el usuario autenticado (requiere auth).
 
@@ -460,7 +560,7 @@ Elimina el usuario autenticado (requiere auth).
 - Curl:
 
 ```bash
-curl -X DELETE http://localhost:3000/api/v1/users/me/ \
+curl -X DELETE http://localhost:3000/api/v1/users/me \
   -H "Authorization: Bearer <access_token>"
 ```
 
@@ -519,16 +619,32 @@ curl http://localhost:3000/api/v1/teams/ \
 Obtiene un equipo por id (solo miembros del team).
 
 - Params: `id`
+- Query (opcional): `include=members` o `members=full` para incluir datos de usuario en `members`.
 - Response 200:
 
 ```json
 { "success": true, "data": { "...": "Team" } }
 ```
 
+- Response 200 (include=members):
+
+```json
+{ "success": true, "data": { "...": "TeamWithMembers" } }
+```
+
+- Nota: si el usuario asociado ya no existe, `members[].user` sera `null`.
+
 - Curl:
 
 ```bash
 curl http://localhost:3000/api/v1/teams/<teamId> \
+  -H "Authorization: Bearer <access_token>"
+```
+
+- Curl (include=members):
+
+```bash
+curl "http://localhost:3000/api/v1/teams/<teamId>?include=members" \
   -H "Authorization: Bearer <access_token>"
 ```
 
@@ -616,6 +732,8 @@ Permisos:
 
 - Solo owner/admin del team pueden crear, actualizar, cambiar estado o eliminar.
 - Cualquier miembro del team puede ver un proyecto por id.
+- El usuario autenticado puede listar sus proyectos con `/users/me/projects`.
+- Cualquier miembro del team puede listar proyectos del team con `/teams/:teamId/projects`.
 
 #### POST /projects/
 
@@ -661,11 +779,11 @@ curl http://localhost:3000/api/v1/projects/<projectId> \
   -H "Authorization: Bearer <access_token>"
 ```
 
-#### GET /projects?teamId=:teamId
+#### GET /teams/:teamId/projects
 
-Lista proyectos por team (solo miembros del team).
+Lista proyectos por team (miembros del team).
 
-- Query: `teamId`
+- Params: `teamId`
 - Response 200:
 
 ```json
@@ -675,7 +793,25 @@ Lista proyectos por team (solo miembros del team).
 - Curl:
 
 ```bash
-curl "http://localhost:3000/api/v1/projects?teamId=<teamId>" \
+curl http://localhost:3000/api/v1/teams/<teamId>/projects \
+  -H "Authorization: Bearer <access_token>"
+```
+
+#### GET /users/me/projects
+
+Lista proyectos del usuario autenticado.
+
+- Headers: `Authorization: Bearer <access_token>`
+- Response 200:
+
+```json
+{ "success": true, "data": [{ "...": "Project" }] }
+```
+
+- Curl:
+
+```bash
+curl http://localhost:3000/api/v1/users/me/projects \
   -H "Authorization: Bearer <access_token>"
 ```
 
@@ -700,6 +836,27 @@ curl -X PUT http://localhost:3000/api/v1/projects/<projectId> \
   -d '{
     "name": "Project Beta",
     "deadline": "2026-01-01T00:00:00.000Z"
+  }'
+```
+
+#### PATCH /projects/:id
+
+Actualiza parcialmente un proyecto (solo owner/admin).
+
+- Params: `id`
+- Body: `UpdateProjectDTO`
+- Response 200:
+
+```json
+{ "success": true, "data": { "...": "Project" } }
+```
+
+```bash
+curl -X PATCH http://localhost:3000/api/v1/projects/<projectId> \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Nueva descripcion"
   }'
 ```
 
@@ -747,6 +904,17 @@ Archiva un proyecto (solo owner/admin).
 { "success": true, "data": { "...": "Project" } }
 ```
 
+#### PATCH /projects/:id/unarchive
+
+Desarchiva un proyecto (solo owner/admin).
+
+- Params: `id`
+- Response 200:
+
+```json
+{ "success": true, "data": { "...": "Project" } }
+```
+
 #### DELETE /projects/:id
 
 Elimina un proyecto (solo owner/admin).
@@ -763,8 +931,11 @@ Elimina un proyecto (solo owner/admin).
 Permisos:
 
 - Solo owner/admin del team pueden crear o asignar tareas.
-- Owner/admin o assignee pueden actualizar o cambiar estado.
+- Solo owner/admin pueden editar tareas.
+- Owner/admin o assignee pueden cambiar estado.
 - Cualquier miembro del team puede ver/listar tareas del proyecto.
+- El usuario autenticado puede listar sus tareas con `/users/me/tasks`.
+- Owner/admin ven todas las tareas del team en `/teams/:teamId/tasks`; members solo las asignadas.
 
 #### POST /projects/:projectId/tasks
 
@@ -785,6 +956,28 @@ Lista tareas de un proyecto con filtros opcionales.
 
 - Params: `projectId`
 - Query: `status`, `priority`, `assigneeId`
+- Response 200:
+
+```json
+{ "success": true, "data": [{ "...": "Task" }] }
+```
+
+#### GET /teams/:teamId/tasks
+
+Lista tareas de un team (owner/admin ven todo; member solo asignadas).
+
+- Params: `teamId`
+- Response 200:
+
+```json
+{ "success": true, "data": [{ "...": "Task" }] }
+```
+
+#### GET /users/me/tasks
+
+Lista tareas del usuario autenticado.
+
+- Headers: `Authorization: Bearer <access_token>`
 - Response 200:
 
 ```json
@@ -851,8 +1044,30 @@ Respuesta simple de texto.
 curl http://localhost:3000/api/v1/welcome
 ```
 
+#### GET /health
+
+Healthcheck con estado de DB.
+
+- Response 200:
+
+```json
+{ "success": true, "db": "up" }
+```
+
+- Response 503:
+
+```json
+{ "success": false, "db": "down" }
+```
+
+- Curl:
+
+```bash
+curl http://localhost:3000/api/v1/health
+```
+
 ## Notas tecnicas
 
 - Las respuestas de `User` incluyen el campo `password` (hash) segun el dominio actual.
 - `User.createdAt` y `User.updatedAt` se serializan como ISO string al responder JSON.
-- Endpoints de usuarios y equipos fallaran si no se monta el middleware de autenticacion para poblar `req.userId`.
+- Endpoints de usuarios, equipos, proyectos y tareas fallaran si no se monta el middleware de autenticacion para poblar `req.userId`.

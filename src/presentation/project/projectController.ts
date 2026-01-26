@@ -8,6 +8,8 @@ import { ResumeProjectUseCase } from "@src/application/usecases/project/ResumePr
 import { CompleteProjectUseCase } from "@src/application/usecases/project/CompleteProjectUseCase";
 import { ArchiveProjectUseCase } from "@src/application/usecases/project/ArchiveProjectUseCase";
 import { ListProjectsByTeamUseCase } from "@src/application/usecases/project/ListProjectsByTeamUseCase";
+import { ListProjectsByUserUseCase } from "@src/application/usecases/project/ListProjectsByUserUseCase";
+import { UnarchiveProjectUseCase } from "@src/application/usecases/project/UnarchiveProjectUseCase";
 import { CreateProjectSchema } from "@src/domain/dtos/CreateProjectDTO";
 import { UpdateProjectSchema } from "@src/domain/dtos/UpdateProjectDTO";
 import { IProjectRepository } from "@src/domain/repositories/IProjectRepository";
@@ -77,9 +79,7 @@ export class ProjectController {
           .json({ success: false, message: "Unauthorized" });
       }
 
-      const teamId = typeof req.query.teamId === "string"
-        ? req.query.teamId
-        : null;
+      const teamId = req.params.teamId ?? null;
 
       if (!teamId) {
         return res.status(400).json({
@@ -93,6 +93,28 @@ export class ProjectController {
         this.teamRepository,
         this.logger,
       ).execute(teamId, requesterId);
+
+      return res.status(200).json({ success: true, data: projects });
+    } catch (error) {
+      return this.handleError(res, error);
+    }
+  };
+
+  listProjectsByUser = async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId ?? null;
+      if (!userId) {
+        this.logger.error("Unauthorized: No user ID found in request");
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
+      }
+
+      const projects = await new ListProjectsByUserUseCase(
+        this.projectRepository,
+        this.teamRepository,
+        this.logger,
+      ).execute(userId);
 
       return res.status(200).json({ success: true, data: projects });
     } catch (error) {
@@ -147,6 +169,45 @@ export class ProjectController {
       const parsed = UpdateProjectSchema.safeParse(req.body);
       if (!parsed.success) {
         this.logger.warn("Invalid update project payload", {
+          issues: parsed.error.message,
+        });
+        return res.status(400).json({
+          success: false,
+          message: parsed.error.issues[0]?.message ?? "Invalid payload",
+        });
+      }
+
+      const project = await new UpdateProjectUseCase(
+        this.projectRepository,
+        this.teamRepository,
+        this.logger,
+      ).execute(projectId, requesterId, parsed.data);
+
+      return res.status(200).json({ success: true, data: project });
+    } catch (error) {
+      return this.handleError(res, error);
+    }
+  };
+
+  patchProject = async (req: Request, res: Response) => {
+    try {
+      const projectId = req.params.id;
+      const requesterId = req.userId ?? null;
+      if (!projectId) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Project ID is required" });
+      }
+      if (!requesterId) {
+        this.logger.error("Unauthorized: No user ID found in request");
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
+      }
+
+      const parsed = UpdateProjectSchema.safeParse(req.body);
+      if (!parsed.success) {
+        this.logger.warn("Invalid patch project payload", {
           issues: parsed.error.message,
         });
         return res.status(400).json({
@@ -268,6 +329,34 @@ export class ProjectController {
       }
 
       const project = await new ArchiveProjectUseCase(
+        this.projectRepository,
+        this.teamRepository,
+        this.logger,
+      ).execute(projectId, requesterId);
+
+      return res.status(200).json({ success: true, data: project });
+    } catch (error) {
+      return this.handleError(res, error);
+    }
+  };
+
+  unarchiveProject = async (req: Request, res: Response) => {
+    try {
+      const projectId = req.params.id;
+      const requesterId = req.userId ?? null;
+      if (!projectId) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Project ID is required" });
+      }
+      if (!requesterId) {
+        this.logger.error("Unauthorized: No user ID found in request");
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
+      }
+
+      const project = await new UnarchiveProjectUseCase(
         this.projectRepository,
         this.teamRepository,
         this.logger,

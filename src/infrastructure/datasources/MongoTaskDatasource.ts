@@ -64,4 +64,18 @@ export class MongoTaskDatasource implements ITaskDatasource {
       });
     }
   }
+
+  async listTasksByUserId(userId: string): Promise<Task[]> {
+    try {
+      const tasks = await TaskMongoModel.find({
+        $or: [{ assignee: userId }, { createdBy: userId }],
+      });
+      return tasks.map((task) => TaskMapper.toDomain(task));
+    } catch (error) {
+      if (error instanceof InfrastructureError) throw error;
+      throw new InfrastructureError("Error listing tasks by user", {
+        cause: error,
+      });
+    }
+  }
 }

@@ -5,7 +5,11 @@ import { IProjectRepository } from "@src/domain/repositories/IProjectRepository"
 export class ProjectRepository implements IProjectRepository {
   constructor(
     private readonly projectDatasource: IProjectDatasource,
-  ) {}
+  ) { }
+
+  async getProjectsByUserId(userId: string): Promise<Project[]> {
+    return this.projectDatasource.getProjectsByUserId(userId);
+  }
 
   async createProject(project: Project): Promise<Project> {
     return this.projectDatasource.createProject(project);

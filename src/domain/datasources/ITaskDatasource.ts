@@ -14,4 +14,5 @@ export interface ITaskDatasource {
       assigneeId?: string;
     },
   ): Promise<Task[]>;
+  listTasksByUserId(userId: string): Promise<Task[]>;
 }

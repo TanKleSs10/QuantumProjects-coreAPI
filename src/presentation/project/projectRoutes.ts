@@ -19,7 +19,6 @@ export class ProjectRoutes {
     router.use(authMiddleware);
 
     router.post("/", asyncHandler(controller.createProject));
-    router.get("/", asyncHandler(controller.listProjectsByTeam));
     router.get(
       "/:id",
       validateObjectIdParam("id"),
@@ -29,6 +28,11 @@ export class ProjectRoutes {
       "/:id",
       validateObjectIdParam("id"),
       asyncHandler(controller.updateProject),
+    );
+    router.patch(
+      "/:id",
+      validateObjectIdParam("id"),
+      asyncHandler(controller.patchProject),
     );
     router.patch(
       "/:id/pause",
@@ -50,11 +54,47 @@ export class ProjectRoutes {
       validateObjectIdParam("id"),
       asyncHandler(controller.archiveProject),
     );
+    router.patch(
+      "/:id/unarchive",
+      validateObjectIdParam("id"),
+      asyncHandler(controller.unarchiveProject),
+    );
     router.delete(
       "/:id",
       validateObjectIdParam("id"),
       asyncHandler(controller.deleteProject),
     );
+
+    return router;
+  }
+
+  static get userRoutes() {
+    const router = Router();
+    const controller = new ProjectController(
+      projectRepository,
+      teamRepository,
+      logger.child("ProjectController"),
+    );
+
+    router.use(authMiddleware);
+
+    router.get("/", asyncHandler(controller.listProjectsByUser));
+
+    return router;
+  }
+
+  static get teamRoutes() {
+    const router = Router({ mergeParams: true });
+    const controller = new ProjectController(
+      projectRepository,
+      teamRepository,
+      logger.child("ProjectController"),
+    );
+
+    router.use(authMiddleware);
+
+    router.use(validateObjectIdParam("teamId"));
+    router.get("/", asyncHandler(controller.listProjectsByTeam));
 
     return router;
   }

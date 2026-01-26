@@ -63,4 +63,5 @@ export class ListProjectsByTeamUseCase implements IListProjectsByTeamUseCase {
     if (team.ownerId === userId) return true;
     return !!team.getMember(userId);
   }
+
 }

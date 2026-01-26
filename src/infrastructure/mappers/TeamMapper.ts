@@ -5,13 +5,25 @@ import { TeamMembership } from "@src/domain/entities/TeamMembership";
 import { TeamModel } from "@src/infrastructure/database/models/TeamModel";
 
 export class TeamMapper {
+  private static refToId(ref: unknown): string {
+    if (!ref) return "";
+    if (typeof ref === "string") return ref;
+    if (ref instanceof Types.ObjectId) return ref.toString();
+    if (typeof ref === "object") {
+      const maybeRef = ref as { _id?: unknown; id?: unknown };
+      const rawId = maybeRef._id ?? maybeRef.id;
+      if (rawId) return rawId.toString?.() ?? String(rawId);
+    }
+    return String(ref);
+  }
+
   static toDomain(model: DocumentType<TeamModel>): Team {
     return new Team(
       model._id.toString(),
       model.name,
-      model.owner.toString(),
+      TeamMapper.refToId(model.owner),
       model.members?.map(
-        (m) => new TeamMembership(m.user.toString(), m.role),
+        (m) => new TeamMembership(TeamMapper.refToId(m.user), m.role),
       ) ?? [],
       model.description,
     );
@@ -29,4 +41,3 @@ export class TeamMapper {
     };
   }
 }
-

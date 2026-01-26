@@ -11,11 +11,15 @@ export class AppRoutes {
     const router = Router();
 
     router.use("/users/me", UserRoutes.routes);
+    router.use("/users/me/projects", ProjectRoutes.userRoutes);
+    router.use("/users/me/tasks", TaskRoutes.userRoutes);
 
     router.use("/auth", AuthRoutes.routes);
     router.use("/teams", TeamRoutes.routes);
     router.use("/projects/:projectId/tasks", TaskRoutes.projectRoutes);
     router.use("/projects", ProjectRoutes.routes);
+    router.use("/teams/:teamId/projects", ProjectRoutes.teamRoutes);
+    router.use("/teams/:teamId/tasks", TaskRoutes.teamRoutes);
     router.use("/tasks", TaskRoutes.routes);
     router.get("/welcome", (_req, res) => {
       res.send("Welcome to the Quantum Projects API!");

@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { ParsedQs } from "qs";
 import { AddMemberUseCase } from "@src/application/usecases/team/AddMemberUseCase";
 import { CreateTeamUseCase } from "@src/application/usecases/team/CreateTeamUseCase";
 import { DemoteMemberUseCase } from "@src/application/usecases/team/DemoteMemberUseCase";
@@ -9,6 +10,9 @@ import { RemoveMemberUseCase } from "@src/application/usecases/team/RemoveMember
 import { CreateTeamSchema } from "@src/domain/dtos/CreateTeamDTO";
 import { InviteMemberSchema } from "@src/domain/dtos/InvitateMemberDTO";
 import { ITeamRepository } from "@src/domain/repositories/ITeamRepository";
+import { IUserRepository } from "@src/domain/repositories/IUserRepository";
+import { Team } from "@src/domain/entities/Team";
+import { User } from "@src/domain/entities/User";
 import { ILogger } from "@src/interfaces/Logger";
 import { DomainError } from "@src/shared/errors/DomainError";
 
@@ -17,6 +21,7 @@ export class TeamController {
 
   constructor(
     private readonly teamRepository: ITeamRepository,
+    private readonly userRepository: IUserRepository,
     logger: ILogger,
   ) {
     this.logger = logger.child("TeamController");
@@ -75,7 +80,20 @@ export class TeamController {
         this.logger,
       ).execute(teamId, requesterId);
 
-      return res.status(200).json({ success: true, data: team });
+      if (!this.shouldIncludeMembers(req)) {
+        return res.status(200).json({ success: true, data: team });
+      }
+
+      const memberDetails = await this.buildMemberDetails(team);
+      const response = {
+        id: team.id,
+        name: team.name,
+        ownerId: team.ownerId,
+        description: team.description,
+        members: memberDetails,
+      };
+
+      return res.status(200).json({ success: true, data: response });
     } catch (error) {
       return this.handleError(res, error);
     }
@@ -241,5 +259,53 @@ export class TeamController {
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
+  }
+
+  private shouldIncludeMembers(req: Request): boolean {
+    const include = this.normalizeQueryParam(req.query.include);
+    const members = this.normalizeQueryParam(req.query.members);
+    return include === "members" || members === "full";
+  }
+
+  private normalizeQueryParam(
+    value: string | ParsedQs | (string | ParsedQs)[] | undefined,
+  ): string | undefined {
+    if (!value) return undefined;
+    if (Array.isArray(value)) {
+      return typeof value[0] === "string" ? value[0] : undefined;
+    }
+    return typeof value === "string" ? value : undefined;
+  }
+
+  private async buildMemberDetails(team: Team) {
+    const members = team.getMembers();
+    const users = await Promise.all(
+      members.map(async (member) => {
+        try {
+          const user = await this.userRepository.getUserById(member.userId);
+          return { userId: member.userId, user, role: member.role };
+        } catch (error) {
+          this.logger.warn("Member user not found", {
+            userId: member.userId,
+          });
+          return { userId: member.userId, user: null, role: member.role };
+        }
+      }),
+    );
+
+    return users.map((member) => ({
+      userId: member.userId,
+      role: member.role,
+      user: member.user ? this.toMemberUserInfo(member.user) : null,
+    }));
+  }
+
+  private toMemberUserInfo(user: User) {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+    };
   }
 }

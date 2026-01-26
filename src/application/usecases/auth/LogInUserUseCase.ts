@@ -84,6 +84,7 @@ export class LogInUserUseCase implements ILogInUserUseCase {
           id: user.id,
           name: user.name,
           email: user.email,
+          isVerified: user.isVerified,
         },
         accessToken,
         refreshToken,

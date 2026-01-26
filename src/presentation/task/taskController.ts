@@ -4,6 +4,8 @@ import { ChangeTaskStatusUseCase } from "@src/application/usecases/task/ChangeTa
 import { CreateTaskUseCase } from "@src/application/usecases/task/CreateTaskUseCase";
 import { GetTaskByIdUseCase } from "@src/application/usecases/task/GetTaskByIdUseCase";
 import { ListTasksByProjectUseCase } from "@src/application/usecases/task/ListTasksByProjectUseCase";
+import { ListTasksByTeamUseCase } from "@src/application/usecases/task/ListTasksByTeamUseCase";
+import { ListTasksByUserUseCase } from "@src/application/usecases/task/ListTasksByUserUseCase";
 import { UpdateTaskUseCase } from "@src/application/usecases/task/UpdateTaskUseCase";
 import { AssignTaskSchema } from "@src/domain/dtos/AssignTaskDTO";
 import { ChangeTaskStatusSchema } from "@src/domain/dtos/ChangeTaskStatusDTO";
@@ -243,6 +245,52 @@ export class TaskController {
         this.teamRepository,
         this.logger,
       ).execute(projectId, requesterId, parsed.data);
+
+      return res.status(200).json({ success: true, data: tasks });
+    } catch (error) {
+      return this.handleError(res, error);
+    }
+  };
+
+  listTasksByTeam = async (req: Request, res: Response) => {
+    try {
+      const teamId = req.params.teamId;
+      const requesterId = req.userId ?? null;
+      if (!teamId) {
+        return res.status(400).json({ success: false, message: "Team ID is required" });
+      }
+      if (!requesterId) {
+        this.logger.error("Unauthorized: No user ID found in request");
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+      }
+
+      const tasks = await new ListTasksByTeamUseCase(
+        this.taskRepository,
+        this.projectRepository,
+        this.teamRepository,
+        this.logger,
+      ).execute(teamId, requesterId);
+
+      return res.status(200).json({ success: true, data: tasks });
+    } catch (error) {
+      return this.handleError(res, error);
+    }
+  };
+
+  listTasksByUser = async (req: Request, res: Response) => {
+    try {
+      const userId = req.userId ?? null;
+      if (!userId) {
+        this.logger.error("Unauthorized: No user ID found in request");
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+      }
+
+      const tasks = await new ListTasksByUserUseCase(
+        this.taskRepository,
+        this.projectRepository,
+        this.teamRepository,
+        this.logger,
+      ).execute(userId);
 
       return res.status(200).json({ success: true, data: tasks });
     } catch (error) {

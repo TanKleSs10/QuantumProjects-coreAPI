@@ -41,6 +41,7 @@ jest.mock("@src/infrastructure/factories/taskRepositoryFactory", () => ({
 jest.mock("@src/infrastructure/factories/projectRepositoryFactory", () => ({
   projectRepository: {
     getProjectById: jest.fn(),
+    getProjectsByTeamId: jest.fn(),
   },
 }));
 
@@ -73,6 +74,7 @@ import { ILogger } from "@src/interfaces/Logger";
 const createTestApp = () => {
   const app = express();
   app.use(express.json());
+  app.use("/api/v1/teams/:teamId/tasks", TaskRoutes.teamRoutes);
   app.use("/api/v1/projects/:projectId/tasks", TaskRoutes.projectRoutes);
   app.use("/api/v1/tasks", TaskRoutes.routes);
   return app;
@@ -80,6 +82,7 @@ const createTestApp = () => {
 
 const PROJECT_ID = "507f1f77bcf86cd799439011";
 const TASK_ID = "507f1f77bcf86cd799439012";
+const TEAM_ID = "507f1f77bcf86cd799439013";
 
 const buildTeam = () => ({
   ownerId: "user-1",
@@ -108,6 +111,9 @@ describe("Task endpoints", () => {
     projectRepository.getProjectById.mockResolvedValue(
       new Project(PROJECT_ID, "Project", "team-1", "user-1"),
     );
+    projectRepository.getProjectsByTeamId.mockResolvedValue([
+      new Project(PROJECT_ID, "Project", TEAM_ID, "user-1"),
+    ]);
     taskRepository.saveTask.mockImplementation(async (task: Task) => task);
     taskRepository.listTasksByProject.mockResolvedValue([]);
   });
@@ -185,6 +191,22 @@ describe("Task endpoints", () => {
     ]);
 
     const res = await agent.get(`/api/v1/projects/${PROJECT_ID}/tasks`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+  });
+
+  it("lists tasks by team", async () => {
+    taskRepository.listTasksByProject.mockResolvedValue([
+      new Task({
+        id: TASK_ID,
+        title: "Task One",
+        projectId: PROJECT_ID,
+        createdBy: "user-1",
+      }),
+    ]);
+
+    const res = await agent.get(`/api/v1/teams/${TEAM_ID}/tasks`);
 
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(1);

@@ -33,6 +33,7 @@ jest.mock("@src/infrastructure/factories/projectRepositoryFactory", () => ({
   projectRepository: {
     createProject: jest.fn(),
     getProjectById: jest.fn(),
+    getProjectsByTeamId: jest.fn(),
     saveProject: jest.fn(),
     deleteProject: jest.fn(),
   },
@@ -61,6 +62,7 @@ import { ILogger } from "@src/interfaces/Logger";
 const createTestApp = () => {
   const app = express();
   app.use(express.json());
+  app.use("/api/v1/teams/:teamId/projects", ProjectRoutes.teamRoutes);
   app.use("/api/v1/projects", ProjectRoutes.routes);
   return app;
 };
@@ -148,6 +150,30 @@ describe("Project endpoints", () => {
     expect(res.body.data.name).toBe("Project Beta");
   });
 
+  it("lists projects by team", async () => {
+    projectRepository.getProjectsByTeamId.mockResolvedValue([
+      new Project(PROJECT_ID, "Project Alpha", TEAM_ID, "user-1"),
+    ]);
+
+    const res = await agent.get(`/api/v1/teams/${TEAM_ID}/projects`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+  });
+
+  it("patches a project", async () => {
+    projectRepository.getProjectById.mockResolvedValue(
+      new Project(PROJECT_ID, "Project Alpha", TEAM_ID, "user-1"),
+    );
+
+    const res = await agent.patch(`/api/v1/projects/${PROJECT_ID}`).send({
+      description: "Updated description",
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.description).toBe("Updated description");
+  });
+
   it("pauses a project", async () => {
     projectRepository.getProjectById.mockResolvedValue(
       new Project(PROJECT_ID, "Project Alpha", TEAM_ID, "user-1"),
@@ -190,6 +216,17 @@ describe("Project endpoints", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe(ProjectStatus.ARCHIVED);
+  });
+
+  it("unarchives a project", async () => {
+    const project = new Project(PROJECT_ID, "Project Alpha", TEAM_ID, "user-1");
+    project.status = ProjectStatus.ARCHIVED;
+    projectRepository.getProjectById.mockResolvedValue(project);
+
+    const res = await agent.patch(`/api/v1/projects/${PROJECT_ID}/unarchive`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe(ProjectStatus.COMPLETED);
   });
 
   it("deletes a project", async () => {
