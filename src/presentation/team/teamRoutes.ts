@@ -2,6 +2,7 @@ import { Router } from "express";
 import { TeamController } from "./teamController";
 import { logger } from "@src/infrastructure/logs";
 import { teamRepository } from "@src/infrastructure/factories/teamRepositoryFactory";
+import { userRepository } from "@src/infrastructure/factories/userRepositoryFactory";
 import { authMiddleware } from "@src/application/middlewares/authmiddleware";
 import { validateObjectIdParam } from "@src/application/middlewares/validateObjectId";
 import { asyncHandler } from "@src/presentation/middlewares/asyncHandler";
@@ -11,6 +12,7 @@ export class TeamRoutes {
     const router = Router();
     const controller = new TeamController(
       teamRepository,
+      userRepository,
       logger.child("TeamController"),
     );
 

@@ -96,9 +96,8 @@ export class UpdateTaskUseCase implements IUpdateTaskUseCase {
   private canUpdate(
     team: { ownerId: string; getMember(userId: string): { role: string } | undefined },
     userId: string,
-    task: Task,
+    _task: Task,
   ): boolean {
-    if (task.assigneeId === userId) return true;
     if (team.ownerId === userId) return true;
     return team.getMember(userId)?.role === "admin";
   }

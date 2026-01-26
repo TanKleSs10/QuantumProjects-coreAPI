@@ -8,9 +8,9 @@ import { EmailSendingError } from "@src/shared/errors/EmailSendingError";
 
 export class EmailService implements IEmailService {
   private readonly log = logger.child("EmailService");
-  private readonly baseUrl = envs.APP_URL || envs.FRONTEND_URL;
+  private readonly baseUrl = envs.FRONTEND_URL;
 
-  constructor(private readonly mailAdapter: IMailAdapter) {}
+  constructor(private readonly mailAdapter: IMailAdapter) { }
 
   async sendVerificationEmail(user: User, token: string): Promise<void> {
     const link = this.buildLink("verify-email", token);
@@ -62,6 +62,6 @@ export class EmailService implements IEmailService {
   private buildLink(pathname: string, token: string): string {
     const normalizedBaseUrl = this.baseUrl.replace(/\/$/, "");
     const encodedToken = encodeURIComponent(token);
-    return `${normalizedBaseUrl}/${pathname}?token=${encodedToken}`;
+    return `${normalizedBaseUrl}/${pathname}/${encodedToken}`;
   }
 }

@@ -46,6 +46,41 @@ export class TaskRoutes {
     return router;
   }
 
+  static get userRoutes() {
+    const router = Router();
+    const controller = new TaskController(
+      taskRepository,
+      projectRepository,
+      teamRepository,
+      eventBus,
+      logger.child("TaskController"),
+    );
+
+    router.use(authMiddleware);
+
+    router.get("/", asyncHandler(controller.listTasksByUser));
+
+    return router;
+  }
+
+  static get teamRoutes() {
+    const router = Router({ mergeParams: true });
+    const controller = new TaskController(
+      taskRepository,
+      projectRepository,
+      teamRepository,
+      eventBus,
+      logger.child("TaskController"),
+    );
+
+    router.use(authMiddleware);
+
+    router.use(validateObjectIdParam("teamId"));
+    router.get("/", asyncHandler(controller.listTasksByTeam));
+
+    return router;
+  }
+
   static get projectRoutes() {
     const router = Router({ mergeParams: true });
     const controller = new TaskController(

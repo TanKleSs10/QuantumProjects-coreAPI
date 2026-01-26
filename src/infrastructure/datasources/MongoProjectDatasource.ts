@@ -42,6 +42,18 @@ export class MongoProjectDatasource implements IProjectDatasource {
     }
   }
 
+  async getProjectsByUserId(userId: string): Promise<Project[]> {
+    try {
+      const projects = await ProjectMongoModel.find({ members: userId });
+      return projects.map((project) => ProjectMapper.toDomain(project));
+    } catch (error) {
+      if (error instanceof InfrastructureError) throw error;
+      throw new InfrastructureError("Error retrieving projects by user", {
+        cause: error,
+      });
+    }
+  }
+
   async saveProject(project: Project): Promise<Project> {
     try {
       const updated = await ProjectMongoModel.findByIdAndUpdate(

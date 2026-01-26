@@ -40,6 +40,13 @@ export class Project {
     this.status = ProjectStatus.ARCHIVED;
   }
 
+  unarchive() {
+    if (this.status !== ProjectStatus.ARCHIVED) {
+      throw new Error("Only archived projects can be unarchived");
+    }
+    this.status = ProjectStatus.COMPLETED;
+  }
+
   rename(name: string) {
     if (!name.trim()) {
       throw new Error("Project name cannot be empty");
@@ -47,4 +54,3 @@ export class Project {
     this.name = name;
   }
 }
-

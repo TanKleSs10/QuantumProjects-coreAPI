@@ -102,7 +102,7 @@ describe("Task use cases", () => {
     ).rejects.toThrow(HttpError);
   });
 
-  it("updates a task when requester is assignee", async () => {
+  it("updates a task when requester is admin", async () => {
     const taskRepository = {
       getTaskById: jest.fn(),
       saveTask: jest.fn(),
@@ -133,11 +133,11 @@ describe("Task use cases", () => {
       new Project("project-id", "Project", "team-id", "owner-id"),
     );
     const team = createTeam("owner-id");
-    team.addMember(TeamMembership.createMember("user-1"));
+    team.addMember(TeamMembership.createAdmin("admin-id"));
     teamRepository.getTeamById.mockResolvedValueOnce(team);
     taskRepository.saveTask.mockImplementation(async (entity: Task) => entity);
 
-    const result = await useCase.execute("task-1", "user-1", { title: "Updated" });
+    const result = await useCase.execute("task-1", "admin-id", { title: "Updated" });
 
     expect(result.title).toBe("Updated");
     expect(eventBus.publish).toHaveBeenCalled();

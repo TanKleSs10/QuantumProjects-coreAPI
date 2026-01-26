@@ -16,7 +16,7 @@ export class UserController {
     private readonly userRepository: IUserRepository,
     private readonly securityService: ISecurityService,
     private readonly logger: ILogger,
-  ) {}
+  ) { }
 
   getUserById = async (req: Request, res: Response) => {
     try {
@@ -32,7 +32,7 @@ export class UserController {
         this.userRepository,
         this.logger,
       ).execute(userId);
-      res.status(200).json({ success: true, data: user });
+      res.status(200).json({ success: true, data: user, meessage: "User fetched successfully" });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }

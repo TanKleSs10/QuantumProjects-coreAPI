@@ -20,6 +20,21 @@ export interface IUserLoginInfo {
   id: string;
   name: string;
   email: string;
+  isVerified: boolean;
+}
+
+export interface IUserProfileInfo {
+  id: string;
+  name: string;
+  email: string;
+  isVerified: boolean;
+  avatarUrl?: string;
+  bio?: string;
+  teamIds: string[];
+  projectIds: string[];
+  notificationIds: string[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 /**
